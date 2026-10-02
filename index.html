@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laboratório Interativo de Vetores 3D</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- KaTeX CSS & JS com Auto-render -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cyan: '#06b6d4',
+              sky: '#38bdf8',
+              rose: '#f43f5e',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              purple: '#8b5cf6'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(56, 189, 248, 0.35);
+      box-shadow: 0 20px 35px -10px rgba(6, 182, 212, 0.15);
+    }
+    .gradient-border {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(139, 92, 246, 0.1), transparent);
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- Background Decorative Grid & Glow -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/3 -right-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
+  </div>
+
+  <!-- Header Top Bar -->
+  <header class="relative z-10 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 px-6 py-3.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-rose-500 flex items-center justify-center font-bold text-white shadow-lg text-sm">
+          $\mathbf{\hat{u}}$
+        </div>
+        <div>
+          <h1 class="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+            Laboratório Interativo de Vetores 3D
+            <span class="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Three.js + KaTeX</span>
+          </h1>
+          <p class="text-[11px] text-slate-400">Do Vetor Unitário às Coordenadas Esféricas no Espaço Euclidiano $\mathbb{R}^3$ — By Sandro Benigno (EvilPlaymobil)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span class="text-slate-400 hidden sm:inline">4 Módulos Interativos</span>
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="relative z-10 flex-1 max-w-7xl mx-auto px-6 py-10 space-y-12">
+    <div class="text-center max-w-3xl mx-auto space-y-4">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/90 border border-slate-700 text-xs text-cyan-300 shadow-inner">
+        <span>✨ Visualizações Interativas em Tempo Real</span>
+      </div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+        Estudando <span class="bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-400 bg-clip-text text-transparent">Álgebra Linear & Geometria 3D</span> de forma visual
+      </h2>
+      <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
+        Do Vetor Unitário às Coordenadas Esféricas no Espaço Euclidiano $\mathbb{R}^3$ — By Sandro Benigno (EvilPlaymobil). Explore a relação entre coordenadas cartesianas, distâncias no espaço, ângulos diretores e sistemas esféricos através de simulações 3D interativas e derivações matemáticas instantâneas.
+      </p>
+    </div>
+
+    <!-- 4 Modules Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- Card 1: Parte 1 -->
+      <a href="parte1.html" class="glass-card rounded-2xl p-6 flex flex-col justify-between group">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              PARTE 1
+            </span>
+            <span class="text-xs text-slate-400 font-mono flex items-center gap-1.5">
+              $\|\mathbf{\hat{v}}\| = 1$
+            </span>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-bold text-white group-hover:text-cyan-300 transition flex items-center justify-between">
+              Vetor Unitário & Normalização 3D
+              <svg class="w-5 h-5 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+              </svg>
+            </h3>
+            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+              Compreenda a definição de magnitude $\|\mathbf{v}\| = \sqrt{x^2+y^2+z^2}$ e o processo de normalização que mapeia qualquer vetor não-nulo na superfície da esfera unitária ($r=1$).
+            </p>
+          </div>
+
+          <!-- Formula Badge -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-xs font-mono text-cyan-200">
+            $$\mathbf{\hat{v}} = \frac{\mathbf{v}}{\|\mathbf{v}\|} = \left(\frac{x}{\|\mathbf{v}\|}, \frac{y}{\|\mathbf{v}\|}, \frac{z}{\|\mathbf{v}\|}\right)$$
+          </div>
+
+          <ul class="text-xs text-slate-400 space-y-1.5 pt-1">
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+              Esfera Unitária translúcida 3D ($r=1$)
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+              Projeções ortogonais e cálculo analítico em tempo real
+            </li>
+          </ul>
+        </div>
+
+        <div class="pt-5 mt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
+          <span class="text-slate-400">Sliders de $X, Y, Z$ de $-10$ a $+10$</span>
+          <span class="font-semibold text-cyan-400 group-hover:underline flex items-center gap-1">
+            Abrir Simulação &rarr;
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 2: Parte 2 -->
+      <a href="parte2.html" class="glass-card rounded-2xl p-6 flex flex-col justify-between group">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              PARTE 2
+            </span>
+            <span class="text-xs text-slate-400 font-mono flex items-center gap-1.5">
+              $\vec{AB} = B - A$
+            </span>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-bold text-white group-hover:text-sky-300 transition flex items-center justify-between">
+              Vetor entre Dois Pontos & Distância Euclidiana
+              <svg class="w-5 h-5 text-slate-500 group-hover:text-sky-400 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+              </svg>
+            </h3>
+            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+              Posicione independentemente os pontos $A(x_A,y_A,z_A)$ e $B(x_B,y_B,z_B)$ para analisar o vetor de deslocamento relativo $\vec{AB}$ e a distância em 3D.
+            </p>
+          </div>
+
+          <!-- Formula Badge -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-xs font-mono text-sky-200">
+            $$d(A,B) = \|\vec{AB}\| = \sqrt{(x_B-x_A)^2 + (y_B-y_A)^2 + (z_B-z_A)^2}$$
+          </div>
+
+          <ul class="text-xs text-slate-400 space-y-1.5 pt-1">
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+              Controle simultâneo das coordenadas de $A$ e $B$
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+              Visualização de $\Delta x, \Delta y, \Delta z$ e vetor unitário diretor
+            </li>
+          </ul>
+        </div>
+
+        <div class="pt-5 mt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
+          <span class="text-slate-400">Pontos $A$ (Rosa) e $B$ (Azul)</span>
+          <span class="font-semibold text-sky-400 group-hover:underline flex items-center gap-1">
+            Abrir Simulação &rarr;
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 3: Parte 3 -->
+      <a href="parte3.html" class="glass-card rounded-2xl p-6 flex flex-col justify-between group">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              PARTE 3
+            </span>
+            <span class="text-xs text-slate-400 font-mono flex items-center gap-1.5">
+              $\sum \cos^2 = 1$
+            </span>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-bold text-white group-hover:text-rose-300 transition flex items-center justify-between">
+              Cossenos Diretores & Ângulos no Espaço
+              <svg class="w-5 h-5 text-slate-500 group-hover:text-rose-400 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+              </svg>
+            </h3>
+            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+              Explore os arcos angulares $\alpha, \beta, \gamma$ formados com cada eixo $+X, +Y, +Z$ e comprove por que as componentes do vetor unitário são os próprios cossenos diretores.
+            </p>
+          </div>
+
+          <!-- Formula Badge -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-xs font-mono text-rose-200">
+            $$\cos^2\alpha + \cos^2\beta + \cos^2\gamma = 1 \quad\iff\quad \mathbf{\hat{v}} = (\cos\alpha, \cos\beta, \cos\gamma)$$
+          </div>
+
+          <ul class="text-xs text-slate-400 space-y-1.5 pt-1">
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+              Arcos de ângulo 3D com setores coloridos interativos
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+              Grid e eixos paramétricos com projeções tracejadas
+            </li>
+          </ul>
+        </div>
+
+        <div class="pt-5 mt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
+          <span class="text-slate-400">Ângulos $\alpha, \beta, \gamma$ em tempo real</span>
+          <span class="font-semibold text-rose-400 group-hover:underline flex items-center gap-1">
+            Abrir Simulação &rarr;
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 4: Parte 4 -->
+      <a href="parte4.html" class="glass-card rounded-2xl p-6 flex flex-col justify-between group">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              PARTE 4
+            </span>
+            <span class="text-xs text-slate-400 font-mono flex items-center gap-1.5">
+              $(r, \theta, \phi)$
+            </span>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-bold text-white group-hover:text-purple-300 transition flex items-center justify-between">
+              Azimute & Elevação 3D: Coordenadas Esféricas
+              <svg class="w-5 h-5 text-slate-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+              </svg>
+            </h3>
+            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+              Visualize a navegação espacial através do ângulo de azimute $\theta$ (plano horizontal) e ângulo de elevação $\phi$ (altura acima do horizonte), com projeção polar no plano $XY$.
+            </p>
+          </div>
+
+          <!-- Formula Badge -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-xs font-mono text-purple-200">
+            $$x = r\cos\phi\cos\theta, \quad y = r\cos\phi\sin\theta, \quad z = r\sin\phi$$
+          </div>
+
+          <ul class="text-xs text-slate-400 space-y-1.5 pt-1">
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+              Projeção no plano horizontal e decomposição trigonométrica
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+              Câmera inteligente com presets (Perspectiva, Topo, Lateral)
+            </li>
+          </ul>
+        </div>
+
+        <div class="pt-5 mt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
+          <span class="text-slate-400">Azimute $\theta$ & Elevação $\phi$</span>
+          <span class="font-semibold text-purple-400 group-hover:underline flex items-center gap-1">
+            Abrir Simulação &rarr;
+          </span>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Pedagogical Journey Section -->
+    <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-6 border border-slate-800">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            🧭 Trilha de Aprendizado Sugerida
+          </h3>
+          <p class="text-xs text-slate-400">Como os quatro conceitos se encadeiam logicamente no estudo vetorial</p>
+        </div>
+        <span class="text-xs font-mono text-cyan-400 bg-cyan-950/60 px-3 py-1 rounded-full border border-cyan-800/60 self-start sm:self-auto">
+          Sequência 1 &rarr; 2 &rarr; 3 &rarr; 4
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 space-y-2">
+          <div class="text-xs font-bold text-cyan-400 font-mono">Etapa 1</div>
+          <div class="text-sm font-semibold text-slate-200">Definição & Norma</div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Entender o que é magnitude de um vetor e por que dividi-lo pelo seu próprio módulo resulta num vetor puramente direcional ($\|\mathbf{\hat{v}}\|=1$).
+          </p>
+        </div>
+
+        <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 space-y-2">
+          <div class="text-xs font-bold text-sky-400 font-mono">Etapa 2</div>
+          <div class="text-sm font-semibold text-slate-200">Pontos Arbitrários</div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Expandir a origem para quaisquer dois pontos $A$ e $B$, calculando o vetor de deslocamento relativo $\vec{AB} = B - A$ e a métrica euclidiana.
+          </p>
+        </div>
+
+        <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 space-y-2">
+          <div class="text-xs font-bold text-rose-400 font-mono">Etapa 3</div>
+          <div class="text-sm font-semibold text-slate-200">Orientação Angular</div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Descobrir que cada componente do vetor unitário é exatamente o cosseno do ângulo com cada eixo ($\cos\alpha, \cos\beta, \cos\gamma$).
+          </p>
+        </div>
+
+        <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 space-y-2">
+          <div class="text-xs font-bold text-purple-400 font-mono">Etapa 4</div>
+          <div class="text-sm font-semibold text-slate-200">Sistemas Esféricos</div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Traduzir a orientação 3D para a intuição prática de navegação usando raio $r$, rotação de bússola ($\theta$) e ângulo de mira ($\phi$).
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="relative z-10 border-t border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-6 py-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <span>Laboratório Interativo de Vetores 3D • Desenvolvido com Three.js & KaTeX</span>
+      <span class="font-mono text-slate-400">4 Módulos Interativos • 100% Client-Side</span>
+    </div>
+  </footer>
+
+  <script>
+    // Inicialização do KaTeX Auto-render
+    function renderAllStaticMath() {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true }
+          ],
+          throwOnError: false,
+          ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"]
+        });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAllStaticMath();
+    });
+
+    window.onload = function() {
+      renderAllStaticMath();
+    };
+  </script>
+</body>
+</html>

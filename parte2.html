@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vetor entre Dois Pontos e Distância Euclidiana 3D</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- KaTeX for crisp mathematical formulas with Auto-render Extension -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              rose: '#f43f5e',
+              sky: '#38bdf8',
+              emerald: '#10b981',
+              amber: '#fbbf24',
+              indigo: '#6366f1'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    /* Scrollbar larga, confortável e colorida para o painel de controles */
+    .custom-scroll {
+      scrollbar-width: auto;
+      scrollbar-color: #38bdf8 #090d16;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 12px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #090d16;
+      border-left: 1px solid rgba(51, 65, 85, 0.5);
+      box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #f43f5e 0%, #38bdf8 50%, #10b981 100%);
+      border-radius: 9999px;
+      border: 2px solid #090d16;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #fb7185 0%, #7dd3fc 50%, #34d399 100%);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:active {
+      background: linear-gradient(180deg, #e11d48 0%, #0284c7 50%, #059669 100%);
+    }
+    input[type=range] {
+      accent-color: #38bdf8;
+    }
+    .slider-accent-a { accent-color: #f43f5e; }
+    .slider-accent-b { accent-color: #38bdf8; }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden selection:bg-sky-500 selection:text-white select-none">
+
+  <!-- Header Top Bar -->
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-500 via-sky-500 to-emerald-500 flex items-center justify-center font-bold text-white shadow-lg shadow-sky-500/20 text-xs">
+        $\vec{AB}$
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          Vetor entre Dois Pontos e Distância 3D
+          <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">Interativo</span>
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">By Sandro Benigno (EvilPlaymobil) — Ajuste as posições dos pontos $A$ e $B$ para ver $\Delta$, $\vec{AB}$, a distância euclidiana e o vetor unitário</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 text-xs">
+      <a href="index.html" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700 flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Início
+      </a>
+      <button id="btn-reset-cam" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        Resetar Câmera
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Split Layout (Left: Controls & Math | Right: 3D Canvas) -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 relative min-h-[calc(100vh-65px)]">
+    
+    <!-- Left: Controls Panel and Step-by-Step Math -->
+    <div class="lg:col-span-5 xl:col-span-4 border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-slate-900/90 flex flex-col custom-scroll overflow-y-auto max-h-[calc(100vh-65px)]">
+      
+      <!-- Preset Scenarios -->
+      <div class="p-4 border-b border-slate-800/70">
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2.5">Cenários Didáticos Pré-definidos</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-preset-exemplo" class="preset-btn text-left p-2.5 rounded-lg bg-sky-950/40 hover:bg-sky-900/60 border border-sky-500/30 transition group">
+            <div class="text-xs font-bold text-sky-300 group-hover:text-sky-200">Exemplo 1 (Geral 3D)</div>
+            <div class="text-[11px] text-slate-400 font-mono">A=(2,3,1) • B=(6,6,4)</div>
+            <div class="text-[10px] text-amber-300 font-mono">Δ=(4,3,3) • d≈5.83</div>
+          </button>
+          <button id="btn-preset-origem" class="preset-btn text-left p-2.5 rounded-lg bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700/60 transition group">
+            <div class="text-xs font-bold text-indigo-300 group-hover:text-indigo-200">Origem $A=(0,0,0)$</div>
+            <div class="text-[11px] text-slate-400 font-mono">A=(0,0,0) • B=(4,3,3)</div>
+            <div class="text-[10px] text-indigo-300 font-mono">Vetor de Posição</div>
+          </button>
+          <button id="btn-preset-diagonal" class="preset-btn text-left p-2.5 rounded-lg bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700/60 transition group">
+            <div class="text-xs font-bold text-emerald-300 group-hover:text-emerald-200">Diagonal do Cubo</div>
+            <div class="text-[11px] text-slate-400 font-mono">A=(0,0,0) • B=(4,4,4)</div>
+            <div class="text-[10px] text-emerald-300 font-mono">d = 4√3 ≈ 6.93</div>
+          </button>
+          <button id="btn-preset-inverter" class="preset-btn text-left p-2.5 rounded-lg bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700/60 transition group">
+            <div class="text-xs font-bold text-rose-300 group-hover:text-rose-200">🔄 Inverter $A \leftrightarrow B$</div>
+            <div class="text-[11px] text-slate-400 font-mono">Troca Sentido: $-\vec{AB}$</div>
+            <div class="text-[10px] text-rose-300 font-mono">Mesma Distância</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sliders for Points A and B -->
+      <div class="p-4 border-b border-slate-800/70 space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Coordenadas dos Pontos</span>
+          <div class="flex items-center gap-2">
+            <span id="gridInfoBadge" class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-800/60">Grid Adaptativo: $\pm 7$</span>
+          </div>
+        </div>
+
+        <!-- Ponto A -->
+        <div class="bg-slate-950/60 p-3 rounded-xl border border-rose-500/30 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
+              <span class="text-xs font-bold text-rose-300">Ponto de Origem $A = (x_A, y_A, z_A)$</span>
+            </div>
+            <span id="label-coords-a" class="text-[11px] font-mono bg-rose-950/80 text-rose-300 px-2 py-0.5 rounded border border-rose-800/60 font-semibold">
+              A = (2.0, 3.0, 1.0)
+            </span>
+          </div>
+          
+          <!-- xA -->
+          <div class="space-y-0.5">
+            <div class="flex justify-between text-xs font-mono text-slate-400">
+              <span class="text-rose-400">$x_A$ (Eixo X)</span>
+              <span id="val-ax" class="text-rose-300 font-bold">2.0</span>
+            </div>
+            <input id="slider-ax" type="range" min="-6" max="7" step="0.5" value="2.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-accent-a">
+          </div>
+
+          <!-- yA -->
+          <div class="space-y-0.5">
+            <div class="flex justify-between text-xs font-mono text-slate-400">
+              <span class="text-green-400">$y_A$ (Eixo Y - Altura)</span>
+              <span id="val-ay" class="text-green-300 font-bold">3.0</span>
+            </div>
+            <input id="slider-ay" type="range" min="-6" max="7" step="0.5" value="3.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-accent-a">
+          </div>
+
+          <!-- zA -->
+          <div class="space-y-0.5">
+            <div class="flex justify-between text-xs font-mono text-slate-400">
+              <span class="text-blue-400">$z_A$ (Eixo Z - Profundidade)</span>
+              <span id="val-az" class="text-blue-300 font-bold">1.0</span>
+            </div>
+            <input id="slider-az" type="range" min="-6" max="7" step="0.5" value="1.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-accent-a">
+          </div>
+        </div>
+
+        <!-- Ponto B -->
+        <div class="bg-slate-950/60 p-3 rounded-xl border border-sky-500/30 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]"></span>
+              <span class="text-xs font-bold text-sky-300">Ponto de Destino $B = (x_B, y_B, z_B)$</span>
+            </div>
+            <span id="label-coords-b" class="text-[11px] font-mono bg-sky-950/80 text-sky-300 px-2 py-0.5 rounded border border-sky-800/60 font-semibold">
+              B = (6.0, 6.0, 4.0)
+            </span>
+          </div>
+          
+          <!-- xB -->
+          <div class="space-y-0.5">
+            <div class="flex justify-between text-xs font-mono text-slate-400">
+              <span class="text-rose-400">$x_B$ (Eixo X)</span>
+              <span id="val-bx" class="text-sky-300 font-bold">6.0</span>
+            </div>
+            <input id="slider-bx" type="range" min="-6" max="7" step="0.5" value="6.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-accent-b">
+          </div>
+
+          <!-- yB -->
+          <div class="space-y-0.5">
+            <div class="flex justify-between text-xs font-mono text-slate-400">
+              <span class="text-green-400">$y_B$ (Eixo Y - Altura)</span>
+              <span id="val-by" class="text-sky-300 font-bold">6.0</span>
+            </div>
+            <input id="slider-by" type="range" min="-6" max="7" step="0.5" value="6.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-accent-b">
+          </div>
+
+          <!-- zB -->
+          <div class="space-y-0.5">
+            <div class="flex justify-between text-xs font-mono text-slate-400">
+              <span class="text-blue-400">$z_B$ (Eixo Z - Profundidade)</span>
+              <span id="val-bz" class="text-sky-300 font-bold">4.0</span>
+            </div>
+            <input id="slider-bz" type="range" min="-6" max="7" step="0.5" value="4.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-accent-b">
+          </div>
+        </div>
+
+        <!-- Visibility toggles -->
+        <div class="pt-1 grid grid-cols-2 gap-2 text-xs">
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-unitario" checked class="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-0">
+            <span>Vetor Unitário $\hat{\mathbf{u}}$</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-caixa" checked class="rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-0">
+            <span>Degraus $\Delta x, \Delta y, \Delta z$</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-droplines" checked class="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-0">
+            <span>Projeções no Solo</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-autorotate" class="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-0">
+            <span>Auto Rotação</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Step-by-Step Mathematical Derivations -->
+      <div class="p-4 space-y-4 flex-1">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Cálculo Algébrico Detalhado</label>
+          <span class="text-[10px] text-sky-400 font-mono bg-sky-950/60 border border-sky-800/60 px-2 py-0.5 rounded">Tempo Real</span>
+        </div>
+
+        <!-- 1. Deltas -->
+        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+          <div class="text-xs font-semibold text-sky-400 mb-1">1. Diferença entre coordenadas ($\Delta$):</div>
+          <div id="math-deltas" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-sky-200"></div>
+        </div>
+
+        <!-- 2. Vetor AB -->
+        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+          <div class="text-xs font-semibold text-amber-400 mb-1">2. Vetor Deslocamento $\vec{AB} = B - A$:</div>
+          <div id="math-vector" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-amber-200"></div>
+        </div>
+
+        <!-- 3. Distância Euclidiana -->
+        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+          <div class="text-xs font-semibold text-emerald-400 mb-1">3. Distância Euclidiana (Norma $|\vec{AB}|$):</div>
+          <div id="math-distance" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-emerald-200"></div>
+        </div>
+
+        <!-- 4. Vetor Unitário Diretor -->
+        <div class="bg-slate-950/60 p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/10">
+          <div class="text-xs font-semibold text-emerald-400 mb-1">4. Vetor Unitário de Direção $\hat{\mathbf{u}} = \frac{\vec{AB}}{d}$:</div>
+          <div id="math-unit" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-emerald-200 font-mono"></div>
+        </div>
+
+        <!-- 5. Resumo Intuitivo -->
+        <div class="bg-gradient-to-r from-slate-900 to-sky-950/40 p-3.5 rounded-xl border border-slate-800 text-xs leading-relaxed text-slate-300">
+          <div class="font-bold text-white mb-1 flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-sky-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Conceito Fundamental
+          </div>
+          <p>
+            O vetor <strong class="text-amber-400">$\vec{AB}$</strong> conecta fisicamente a origem <strong class="text-rose-400">$A$</strong> ao destino <strong class="text-sky-400">$B$</strong>. O vetor unitário <strong class="text-emerald-400">$\hat{\mathbf{u}}$</strong> aponta na mesmíssima linha de visada partindo de $A$, com comprimento rigorosamente padronizado em <strong>1 unidade</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: 3D WebGL Canvas Area -->
+    <div class="lg:col-span-7 xl:col-span-8 relative h-[50vh] lg:h-auto w-full bg-slate-950 overflow-hidden flex flex-col">
+      
+      <!-- Legenda sobre o Canvas -->
+      <div class="absolute top-4 left-4 z-10 flex flex-col gap-1.5 bg-slate-900/80 backdrop-blur-md p-3 rounded-xl border border-slate-800 text-xs shadow-lg pointer-events-none">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e]"></span>
+          <span class="text-slate-200 font-semibold">Ponto A (Origem)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-sky-400 shadow-[0_0_6px_#38bdf8]"></span>
+          <span class="text-slate-200 font-semibold">Ponto B (Destino)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-1 bg-amber-400 shadow-[0_0_6px_#fbbf24]"></span>
+          <span class="text-slate-200 font-semibold">Vetor $\vec{AB}$ (Distância $d$)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-1 bg-emerald-400 shadow-[0_0_6px_#34d399]"></span>
+          <span class="text-slate-200 font-semibold">Vetor Unitário $\hat{\mathbf{u}}$ ($|\hat{\mathbf{u}}| = 1$)</span>
+        </div>
+        <div class="flex items-center gap-2 pt-1 border-t border-slate-800 text-[11px] text-slate-400">
+          <span>Eixos: <span class="text-red-400 font-bold">X</span> (Vermelho), <span class="text-green-400 font-bold">Y</span> (Verde), <span class="text-blue-400 font-bold">Z</span> (Azul)</span>
+        </div>
+      </div>
+
+      <!-- Indicador flutuante de distância -->
+      <div id="floating-badge" class="absolute bottom-4 right-4 z-10 bg-slate-900/90 backdrop-blur border border-amber-500/30 px-3.5 py-2 rounded-xl text-xs font-mono text-amber-300 shadow-xl pointer-events-none">
+        $d = 5.83$ u
+      </div>
+
+      <!-- WebGL Canvas Container -->
+      <div id="canvas-container" class="w-full h-full relative cursor-grab active:cursor-grabbing"></div>
+    </div>
+  </main>
+
+  <script>
+    // --- Estado Global ---
+    const state = {
+      ax: 2.0, ay: 3.0, az: 1.0,
+      bx: 6.0, by: 6.0, bz: 4.0,
+      showUnitVector: true,
+      showDeltaBox: true,
+      showDropLines: true,
+      autoRotate: false
+    };
+
+    let scene, camera, renderer, controls;
+    let gridHelper, groupAxes;
+    let meshA, meshB;
+    let arrowAB = null;
+    let arrowUnit = null;
+    let lineDropA, lineDropB, dropLineGeoA, dropLineGeoB;
+    let boxGroup;
+    let currentGridR = 0;
+
+    // Smooth camera animation state
+    let isTransitioningCamera = false;
+    let camStartPos = new THREE.Vector3();
+    let camEndPos = new THREE.Vector3();
+    let camStartTarget = new THREE.Vector3();
+    let camEndTarget = new THREE.Vector3();
+    let camAnimProgress = 0;
+
+    const deltaLineMatX = new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 2, transparent: true, opacity: 0.85 });
+    const deltaLineMatY = new THREE.LineBasicMaterial({ color: 0x22c55e, linewidth: 2, transparent: true, opacity: 0.85 });
+    const deltaLineMatZ = new THREE.LineBasicMaterial({ color: 0x3b82f6, linewidth: 2, transparent: true, opacity: 0.85 });
+
+    function init() {
+      const container = document.getElementById('canvas-container');
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x020617);
+      scene.fog = new THREE.FogExp2(0x020617, 0.02);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(11, 10, 14);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.target.set(4, 4.5, 2.5);
+
+      // Cancel camera tween if user starts manual interaction
+      controls.addEventListener('start', () => {
+        isTransitioningCamera = false;
+      });
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      dirLight.position.set(10, 20, 15);
+      scene.add(dirLight);
+
+      const fillLight = new THREE.PointLight(0x38bdf8, 0.4, 30);
+      fillLight.position.set(-10, 5, -10);
+      scene.add(fillLight);
+
+      // Points Meshes
+      const sphereGeo = new THREE.SphereGeometry(0.22, 32, 32);
+      meshA = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({
+        color: 0xf43f5e, roughness: 0.2, metalness: 0.1, emissive: 0x9f1239, emissiveIntensity: 0.5
+      }));
+      scene.add(meshA);
+
+      meshB = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({
+        color: 0x38bdf8, roughness: 0.2, metalness: 0.1, emissive: 0x0369a1, emissiveIntensity: 0.5
+      }));
+      scene.add(meshB);
+
+      // Drop lines to ground
+      const dropLineMatA = new THREE.LineDashedMaterial({ color: 0xf43f5e, dashSize: 0.2, gapSize: 0.15, opacity: 0.45, transparent: true });
+      const dropLineMatB = new THREE.LineDashedMaterial({ color: 0x38bdf8, dashSize: 0.2, gapSize: 0.15, opacity: 0.45, transparent: true });
+      dropLineGeoA = new THREE.BufferGeometry();
+      dropLineGeoB = new THREE.BufferGeometry();
+      lineDropA = new THREE.Line(dropLineGeoA, dropLineMatA);
+      lineDropB = new THREE.Line(dropLineGeoB, dropLineMatB);
+      scene.add(lineDropA);
+      scene.add(lineDropB);
+
+      // Delta box group
+      boxGroup = new THREE.Group();
+      scene.add(boxGroup);
+
+      // Setup Listeners
+      setupUI();
+      window.addEventListener('resize', onWindowResize);
+
+      // Initial Scene Update
+      updateAdaptiveGridAndAxes(false);
+      updateScene();
+      animate();
+    }
+
+    function updateAdaptiveGridAndAxes(shouldAutoZoom = false) {
+      const maxCoord = Math.max(
+        Math.abs(state.ax), Math.abs(state.ay), Math.abs(state.az),
+        Math.abs(state.bx), Math.abs(state.by), Math.abs(state.bz)
+      );
+
+      // Regra de ouro: Dimensão do grid = maior coordenada arredondada para cima + 1 de margem
+      const R = Math.max(2, Math.ceil(maxCoord) + 1);
+
+      const badge = document.getElementById('gridInfoBadge');
+      if (badge) {
+        badge.innerHTML = `Grid Adaptativo: $\\pm ${R}$`;
+        if (window.katex && typeof renderMathInElement === 'function') {
+          renderMathInElement(badge, { delimiters: [{ left: '$', right: '$', display: false }] });
+        }
+      }
+
+      if (R === currentGridR) return;
+      currentGridR = R;
+
+      // 1. Atualiza Grid no Chão (XZ)
+      if (gridHelper) scene.remove(gridHelper);
+      const gridSize = R * 2;
+      const gridDivisions = R * 2; // Cada célula é exatamente 1x1 unidade
+      gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x475569, 0x1e293b);
+      gridHelper.position.y = 0;
+      scene.add(gridHelper);
+
+      // 2. Atualiza Eixos Cartesianos
+      if (!groupAxes) {
+        groupAxes = new THREE.Group();
+        scene.add(groupAxes);
+      }
+      while (groupAxes.children.length > 0) {
+        groupAxes.remove(groupAxes.children[0]);
+      }
+
+      const axisLength = R;
+      const headLen = Math.min(0.35, axisLength * 0.08);
+      const headWidth = headLen * 0.5;
+
+      const makeAxis = (dir, colorHex) => {
+        return new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0, 0), axisLength, colorHex, headLen, headWidth);
+      };
+
+      groupAxes.add(makeAxis(new THREE.Vector3(1, 0, 0), 0xef4444));  // +X Red
+      groupAxes.add(makeAxis(new THREE.Vector3(-1, 0, 0), 0x7f1d1d)); // -X Dim
+      groupAxes.add(makeAxis(new THREE.Vector3(0, 1, 0), 0x22c55e));  // +Y Green
+      groupAxes.add(makeAxis(new THREE.Vector3(0, -1, 0), 0x14532d)); // -Y Dim
+      groupAxes.add(makeAxis(new THREE.Vector3(0, 0, 1), 0x3b82f6));  // +Z Blue
+      groupAxes.add(makeAxis(new THREE.Vector3(0, 0, -1), 0x1e3a8a)); // -Z Dim
+
+      // Rótulos dos eixos
+      const addAxisLabel = (text, pos, color) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = color;
+        ctx.font = 'Bold 54px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 64, 64);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.position.copy(pos);
+        sprite.scale.set(0.6, 0.6, 0.6);
+        groupAxes.add(sprite);
+      };
+
+      addAxisLabel('+X', new THREE.Vector3(axisLength + 0.35, 0.1, 0), '#f87171');
+      addAxisLabel('+Y', new THREE.Vector3(0, axisLength + 0.35, 0.1), '#4ade80');
+      addAxisLabel('+Z', new THREE.Vector3(0, 0.1, axisLength + 0.35), '#60a5fa');
+
+      if (shouldAutoZoom) {
+        const mid = new THREE.Vector3(
+          (state.ax + state.bx) / 2,
+          (state.ay + state.by) / 2,
+          (state.az + state.bz) / 2
+        );
+        const dist = Math.max(8, R * 1.8);
+        const targetPos = new THREE.Vector3(mid.x + dist * 0.7, mid.y + dist * 0.6, mid.z + dist * 0.9);
+        startCameraTransition(targetPos, mid);
+      }
+    }
+
+    function startCameraTransition(newPos, newTarget) {
+      camStartPos.copy(camera.position);
+      camEndPos.copy(newPos);
+      camStartTarget.copy(controls.target);
+      camEndTarget.copy(newTarget);
+      camAnimProgress = 0;
+      isTransitioningCamera = true;
+    }
+
+    function createDeltaLine(p1, p2, material) {
+      const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+      return new THREE.Line(geo, material);
+    }
+
+    function updateScene(fromSlider = false) {
+      const posA = new THREE.Vector3(state.ax, state.ay, state.az);
+      const posB = new THREE.Vector3(state.bx, state.by, state.bz);
+
+      updateAdaptiveGridAndAxes(fromSlider);
+
+      // Posiciona esferas
+      meshA.position.copy(posA);
+      meshB.position.copy(posB);
+
+      // Linhas de projeção vertical
+      if (state.showDropLines) {
+        lineDropA.visible = true;
+        lineDropB.visible = true;
+        dropLineGeoA.setFromPoints([posA, new THREE.Vector3(posA.x, 0, posA.z)]);
+        lineDropA.computeLineDistances();
+        dropLineGeoB.setFromPoints([posB, new THREE.Vector3(posB.x, 0, posB.z)]);
+        lineDropB.computeLineDistances();
+      } else {
+        lineDropA.visible = false;
+        lineDropB.visible = false;
+      }
+
+      // Vetor diferença AB
+      const vecAB = new THREE.Vector3().subVectors(posB, posA);
+      const distance = vecAB.length();
+      const dirAB = distance > 0.0001 ? vecAB.clone().normalize() : new THREE.Vector3(0, 1, 0);
+
+      // Vetor AB Principal
+      if (arrowAB) scene.remove(arrowAB);
+      if (distance > 0.0001) {
+        arrowAB = new THREE.ArrowHelper(
+          dirAB,
+          posA,
+          distance,
+          0xfbbf24,
+          Math.min(0.5, distance * 0.22),
+          Math.min(0.25, distance * 0.11)
+        );
+        scene.add(arrowAB);
+      }
+
+      // Vetor Unitário Diretor
+      if (arrowUnit) scene.remove(arrowUnit);
+      if (state.showUnitVector && distance > 0.0001) {
+        arrowUnit = new THREE.ArrowHelper(
+          dirAB,
+          posA,
+          1.0,
+          0x10b981,
+          0.26,
+          0.13
+        );
+        scene.add(arrowUnit);
+      }
+
+      // Caixa de componentes (Delta X -> Delta Z -> Delta Y)
+      while (boxGroup.children.length > 0) {
+        boxGroup.remove(boxGroup.children[0]);
+      }
+
+      if (state.showDeltaBox && distance > 0.0001) {
+        const corner1 = new THREE.Vector3(posB.x, posA.y, posA.z);
+        const corner2 = new THREE.Vector3(posB.x, posA.y, posB.z);
+        boxGroup.add(createDeltaLine(posA, corner1, deltaLineMatX));
+        boxGroup.add(createDeltaLine(corner1, corner2, deltaLineMatZ));
+        boxGroup.add(createDeltaLine(corner2, posB, deltaLineMatY));
+      }
+
+      // Atualiza KaTeX e Textos
+      updateMathAndUI(posA, posB, vecAB, distance);
+    }
+
+    function updateMathAndUI(posA, posB, vecAB, d) {
+      const dx = vecAB.x;
+      const dy = vecAB.y;
+      const dz = vecAB.z;
+
+      document.getElementById('val-ax').textContent = posA.x.toFixed(1);
+      document.getElementById('val-ay').textContent = posA.y.toFixed(1);
+      document.getElementById('val-az').textContent = posA.z.toFixed(1);
+
+      document.getElementById('val-bx').textContent = posB.x.toFixed(1);
+      document.getElementById('val-by').textContent = posB.y.toFixed(1);
+      document.getElementById('val-bz').textContent = posB.z.toFixed(1);
+
+      document.getElementById('label-coords-a').textContent = `A = (${posA.x.toFixed(1)}, ${posA.y.toFixed(1)}, ${posA.z.toFixed(1)})`;
+      document.getElementById('label-coords-b').textContent = `B = (${posB.x.toFixed(1)}, ${posB.y.toFixed(1)}, ${posB.z.toFixed(1)})`;
+
+      document.getElementById('floating-badge').textContent = `d = ${d.toFixed(2)} u | Δ = (${dx.toFixed(1)}, ${dy.toFixed(1)}, ${dz.toFixed(1)})`;
+
+      if (window.katex) {
+        // 1. Deltas
+        const deltasLatex = `\\begin{aligned}
+          \\Delta x &= x_B - x_A = ${posB.x.toFixed(1)} - (${posA.x.toFixed(1)}) = \\mathbf{${dx.toFixed(1)}} \\\\[2pt]
+          \\Delta y &= y_B - y_A = ${posB.y.toFixed(1)} - (${posA.y.toFixed(1)}) = \\mathbf{${dy.toFixed(1)}} \\\\[2pt]
+          \\Delta z &= z_B - z_A = ${posB.z.toFixed(1)} - (${posA.z.toFixed(1)}) = \\mathbf{${dz.toFixed(1)}}
+        \\end{aligned}`;
+        katex.render(deltasLatex, document.getElementById('math-deltas'), { throwOnError: false });
+
+        // 2. Vetor AB
+        const vectorLatex = `\\vec{AB} = B - A = (${dx.toFixed(1)},\\, ${dy.toFixed(1)},\\, ${dz.toFixed(1)})`;
+        katex.render(vectorLatex, document.getElementById('math-vector'), { throwOnError: false });
+
+        // 3. Distância
+        const sumSquares = (dx*dx + dy*dy + dz*dz).toFixed(1);
+        const distLatex = `\\begin{aligned}
+          d &= |\\vec{AB}| = \\sqrt{\\Delta x^2 + \\Delta y^2 + \\Delta z^2} \\\\[2pt]
+            &= \\sqrt{(${dx.toFixed(1)})^2 + (${dy.toFixed(1)})^2 + (${dz.toFixed(1)})^2} = \\sqrt{${sumSquares}} \\\\[3pt]
+            &\\approx \\mathbf{${d.toFixed(2)}}
+        \\end{aligned}`;
+        katex.render(distLatex, document.getElementById('math-distance'), { throwOnError: false });
+
+        // 4. Vetor Unitário
+        if (d > 0.0001) {
+          const ux = (dx / d).toFixed(3);
+          const uy = (dy / d).toFixed(3);
+          const uz = (dz / d).toFixed(3);
+          const unitLatex = `\\hat{\\mathbf{u}} = \\frac{\\vec{AB}}{|\\vec{AB}|} \\approx (${ux},\\, ${uy},\\, ${uz}), \\quad |\\hat{\\mathbf{u}}| = 1.000`;
+          katex.render(unitLatex, document.getElementById('math-unit'), { throwOnError: false });
+        } else {
+          katex.render(`\\vec{AB} = \\vec{0} \\; (Pontos\\; coincidentes)`, document.getElementById('math-unit'), { throwOnError: false });
+        }
+      }
+    }
+
+    function setupUI() {
+      const bindSlider = (id, prop) => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', (e) => {
+          state[prop] = parseFloat(e.target.value);
+          updateScene(true);
+        });
+      };
+
+      bindSlider('slider-ax', 'ax');
+      bindSlider('slider-ay', 'ay');
+      bindSlider('slider-az', 'az');
+      bindSlider('slider-bx', 'bx');
+      bindSlider('slider-by', 'by');
+      bindSlider('slider-bz', 'bz');
+
+      document.getElementById('chk-unitario').addEventListener('change', (e) => {
+        state.showUnitVector = e.target.checked;
+        updateScene(false);
+      });
+
+      document.getElementById('chk-caixa').addEventListener('change', (e) => {
+        state.showDeltaBox = e.target.checked;
+        updateScene(false);
+      });
+
+      document.getElementById('chk-droplines').addEventListener('change', (e) => {
+        state.showDropLines = e.target.checked;
+        updateScene(false);
+      });
+
+      document.getElementById('chk-autorotate').addEventListener('change', (e) => {
+        state.autoRotate = e.target.checked;
+      });
+
+      // Presets
+      document.getElementById('btn-preset-exemplo').addEventListener('click', () => {
+        setCoords({ ax: 2, ay: 3, az: 1, bx: 6, by: 6, bz: 4 });
+        startCameraTransition(new THREE.Vector3(11, 10, 14), new THREE.Vector3(4, 4.5, 2.5));
+      });
+
+      document.getElementById('btn-preset-origem').addEventListener('click', () => {
+        setCoords({ ax: 0, ay: 0, az: 0, bx: 4, by: 3, bz: 3 });
+        startCameraTransition(new THREE.Vector3(9, 8, 11), new THREE.Vector3(2, 1.5, 1.5));
+      });
+
+      document.getElementById('btn-preset-diagonal').addEventListener('click', () => {
+        setCoords({ ax: 0, ay: 0, az: 0, bx: 4, by: 4, bz: 4 });
+        startCameraTransition(new THREE.Vector3(10, 10, 12), new THREE.Vector3(2, 2, 2));
+      });
+
+      document.getElementById('btn-preset-inverter').addEventListener('click', () => {
+        setCoords({
+          ax: state.bx, ay: state.by, az: state.bz,
+          bx: state.ax, by: state.ay, bz: state.az
+        });
+      });
+
+      document.getElementById('btn-reset-cam').addEventListener('click', () => {
+        const mid = new THREE.Vector3(
+          (state.ax + state.bx) / 2,
+          (state.ay + state.by) / 2,
+          (state.az + state.bz) / 2
+        );
+        const dist = Math.max(8, currentGridR * 1.8);
+        startCameraTransition(new THREE.Vector3(mid.x + dist * 0.7, mid.y + dist * 0.6, mid.z + dist * 0.9), mid);
+      });
+    }
+
+    function setCoords(c) {
+      state.ax = c.ax; state.ay = c.ay; state.az = c.az;
+      state.bx = c.bx; state.by = c.by; state.bz = c.bz;
+
+      document.getElementById('slider-ax').value = c.ax;
+      document.getElementById('slider-ay').value = c.ay;
+      document.getElementById('slider-az').value = c.az;
+      document.getElementById('slider-bx').value = c.bx;
+      document.getElementById('slider-by').value = c.by;
+      document.getElementById('slider-bz').value = c.bz;
+
+      updateScene(true);
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvas-container');
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Smooth camera interpolation
+      if (isTransitioningCamera) {
+        camAnimProgress += 0.05;
+        const ease = 0.5 - 0.5 * Math.cos(Math.min(1, camAnimProgress) * Math.PI);
+        camera.position.lerpVectors(camStartPos, camEndPos, ease);
+        controls.target.lerpVectors(camStartTarget, camEndTarget, ease);
+
+        if (camAnimProgress >= 1.0) {
+          isTransitioningCamera = false;
+        }
+      }
+
+      if (state.autoRotate && !isTransitioningCamera) {
+        scene.rotation.y += 0.004;
+      } else {
+        scene.rotation.y = 0;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function renderAllStaticMath() {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true }
+          ],
+          throwOnError: false,
+          ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"]
+        });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAllStaticMath();
+      init();
+    });
+  </script>
+</body>
+</html>

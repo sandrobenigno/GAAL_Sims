@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Azimute e Elevação 3D: Descrição Esférica e Intuitiva</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- KaTeX for math formula rendering with Auto-render Extension -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            azimuth: '#38bdf8',
+            elevation: '#f59e0b',
+            projection: '#a855f7',
+            vector: '#10b981'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    /* Scrollbar larga, confortável e colorida para o painel de controles */
+    .custom-scroll {
+      scrollbar-width: auto;
+      scrollbar-color: #38bdf8 #090d16;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 12px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #090d16;
+      border-left: 1px solid rgba(51, 65, 85, 0.5);
+      box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #38bdf8 0%, #a855f7 50%, #f59e0b 100%);
+      border-radius: 9999px;
+      border: 2px solid #090d16;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #7dd3fc 0%, #c084fc 50%, #fbbf24 100%);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:active {
+      background: linear-gradient(180deg, #0284c7 0%, #9333ea 50%, #d97706 100%);
+    }
+    input[type=range] {
+      accent-color: #38bdf8;
+    }
+    .slider-x { accent-color: #f43f5e; }
+    .slider-y { accent-color: #38bdf8; }
+    .slider-z { accent-color: #22c55e; }
+
+    /* Ajuste de fórmulas KaTeX */
+    .katex-display {
+      margin: 0.25em 0 !important;
+    }
+    .katex {
+      font-size: 1.02em;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none overflow-x-hidden">
+
+  <!-- Header Top Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-4 py-3 flex items-center justify-between z-30 sticky top-0">
+    <div class="flex items-center space-x-3">
+      <div class="h-9 px-2.5 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-500 to-amber-500 flex items-center justify-center font-bold text-white shadow-lg text-xs shadow-sky-500/20 whitespace-nowrap">
+        $(\theta,\phi)$
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          Azimute e Elevação: Direção Intuitiva 3D
+          <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">Coordenadas Esféricas</span>
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">
+          By Sandro Benigno (EvilPlaymobil) — Sistema com Plano Horizontal $XY$ (Azimute $\theta$) e Altura Vertical no Eixo $Z$ (Elevação $\phi$)
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 text-xs">
+      <a href="index.html" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700 flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Início
+      </a>
+      <button id="btn-top-view" class="px-3 py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900 text-sky-300 border border-sky-700/60 transition flex items-center gap-1.5 shadow-sm">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+        Vista Superior (2D)
+      </button>
+      <button id="btn-reset-cam" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        Resetar Câmera
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Split Layout (Left: Controls & Math | Right: 3D Canvas) -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-65px)]">
+    
+    <!-- Left: Controls Panel and KaTeX Mathematical Derivations -->
+    <div class="lg:col-span-5 xl:col-span-4 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/90 flex flex-col custom-scroll overflow-y-auto max-h-[calc(100vh-65px)]">
+      
+      <!-- Preset Buttons -->
+      <div class="p-4 border-b border-slate-800/80">
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2.5">Cenários Didáticos & Ângulos Notáveis</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-preset-artigo" class="text-left p-2.5 rounded-lg bg-sky-950/40 hover:bg-sky-900/50 border border-sky-500/30 transition group">
+            <div class="text-xs font-bold text-sky-300 group-hover:text-sky-200">Exemplo 1: Vetor (4, 3, 3)</div>
+            <div class="text-[11px] text-slate-400 font-mono">Δ=(4, 3, 3) • r=5</div>
+            <div class="text-[10px] text-sky-400 font-mono">θ = 36.87° • φ = 30.96°</div>
+          </button>
+          <button id="btn-preset-horizonte" class="text-left p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/70 border border-slate-700/60 transition group">
+            <div class="text-xs font-bold text-amber-300 group-hover:text-amber-200">Horizonte Puro</div>
+            <div class="text-[11px] text-slate-400 font-mono">Δ=(4, 4, 0) • Δz=0</div>
+            <div class="text-[10px] text-amber-400 font-mono">θ = 45.00° • φ = 0.00°</div>
+          </button>
+          <button id="btn-preset-zenite" class="text-left p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/70 border border-slate-700/60 transition group">
+            <div class="text-xs font-bold text-emerald-300 group-hover:text-emerald-200">Zênite (Vertical)</div>
+            <div class="text-[11px] text-slate-400 font-mono">Δ=(0, 0, 5)</div>
+            <div class="text-[10px] text-emerald-400 font-mono">θ = Indef. • φ = 90.00°</div>
+          </button>
+          <button id="btn-preset-nadir" class="text-left p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/70 border border-slate-700/60 transition group">
+            <div class="text-xs font-bold text-rose-300 group-hover:text-rose-200">Nadir (Descendo)</div>
+            <div class="text-[11px] text-slate-400 font-mono">Δ=(3, 3, -4)</div>
+            <div class="text-[10px] text-rose-400 font-mono">θ = 45.00° • φ = -43.31°</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sliders Section -->
+      <div class="p-4 border-b border-slate-800/80 space-y-3.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Componentes de Deslocamento $\vec{AB}$</span>
+          <div class="flex items-center gap-2">
+            <span id="gridInfoBadge" class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-800/60">Grid Adaptativo: $\pm 5$</span>
+            <button id="btn-reset-vals" class="text-[11px] text-slate-400 hover:text-sky-400 transition underline underline-offset-2">Resetar</button>
+          </div>
+        </div>
+
+        <!-- Slider Delta X -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold flex items-center gap-1.5 text-rose-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+              $\Delta x$ (Eixo X)
+            </span>
+            <span id="label-dx" class="font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-rose-300 font-semibold text-xs">4.00</span>
+          </div>
+          <input id="slider-dx" type="range" min="-7" max="7" step="0.1" value="4.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-x">
+        </div>
+
+        <!-- Slider Delta Y -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold flex items-center gap-1.5 text-sky-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span>
+              $\Delta y$ (Eixo Y no Plano Horizontal)
+            </span>
+            <span id="label-dy" class="font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-sky-300 font-semibold text-xs">3.00</span>
+          </div>
+          <input id="slider-dy" type="range" min="-7" max="7" step="0.1" value="3.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-y">
+        </div>
+
+        <!-- Slider Delta Z -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold flex items-center gap-1.5 text-green-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
+              $\Delta z$ (Eixo Z - Altura/Elevação)
+            </span>
+            <span id="label-dz" class="font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-green-300 font-semibold text-xs">3.00</span>
+          </div>
+          <input id="slider-dz" type="range" min="-7" max="7" step="0.1" value="3.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-z">
+        </div>
+
+        <!-- Visibility toggles -->
+        <div class="pt-2 grid grid-cols-2 gap-2 text-xs">
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-sector-azimuth" checked class="rounded bg-slate-800 border-slate-700 text-sky-500 focus:ring-0">
+            <span>Setor do Azimute ($\theta$)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-sector-elevation" checked class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+            <span>Setor de Elevação ($\phi$)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-projections" checked class="rounded bg-slate-800 border-slate-700 text-purple-500 focus:ring-0">
+            <span>Projeção $r$ no Solo $XY$</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-autorotate" class="rounded bg-slate-800 border-slate-700 text-sky-500 focus:ring-0">
+            <span>Auto Rotação</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Mathematical Step-by-Step Panels -->
+      <div class="p-4 space-y-4 flex-1">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Passo a Passo Matemático Detalhado</label>
+          <span class="text-[10px] text-sky-400 font-mono bg-sky-950/60 border border-sky-800/60 px-2 py-0.5 rounded">Tempo Real</span>
+        </div>
+
+        <!-- 1. Vetor Original e Projeção Horizontal -->
+        <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800 space-y-1.5">
+          <div class="text-xs font-semibold text-purple-400 flex items-center justify-between">
+            <span>1. Vetor $\vec{AB}$ e Raio Horizontal no Plano $XY$</span>
+            <span id="badge-radius" class="text-xs font-mono font-bold text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800">r = 5.00</span>
+          </div>
+          <div id="katex-step-radius" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-slate-200"></div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            A projeção no plano horizontal $XY$ é $(\Delta x, \Delta y, 0)$, com comprimento euclidiano $r = \sqrt{\Delta x^2 + \Delta y^2}$.
+          </p>
+        </div>
+
+        <!-- 2. Azimute theta -->
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-sky-500/30 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-sky-400">2. Azimute Horizontal ($\theta$)</span>
+            <span id="badge-azimuth" class="text-xs font-mono font-bold text-sky-300 bg-sky-950/80 px-2 py-0.5 rounded border border-sky-800">θ ≈ 36.87°</span>
+          </div>
+          <div id="katex-step-azimuth" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-sky-100"></div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Ângulo medido no chão em relação ao eixo $+X$ em direção a $+Y$. Olhando de cima, define para onde o vetor aponta na bússola horizontal.
+          </p>
+        </div>
+
+        <!-- 3. Elevação phi -->
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-amber-500/30 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-400">3. Elevação Vertical ($\phi$)</span>
+            <span id="badge-elevation" class="text-xs font-mono font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">φ ≈ 30.96°</span>
+          </div>
+          <div id="katex-step-elevation" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-amber-100"></div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Ângulo vertical formado entre a sombra no plano $XY$ (comprimento $r$) e a subida ou descida $\Delta z$.
+          </p>
+        </div>
+
+        <!-- 4. Resumo Sintético -->
+        <div class="bg-gradient-to-br from-slate-900 via-sky-950/30 to-slate-900 p-4 rounded-xl border border-sky-500/30 text-xs space-y-2">
+          <div class="font-bold text-white flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Descrição Esférica Completa do Vetor
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1 font-mono">
+            <div class="bg-slate-950/60 p-2 rounded-lg border border-sky-500/20 text-center">
+              <span class="text-slate-400 text-[10px] block">AZIMUTE (Horizontal)</span>
+              <span id="summary-azimuth" class="text-sky-300 font-bold text-sm">36.87°</span>
+            </div>
+            <div class="bg-slate-950/60 p-2 rounded-lg border border-amber-500/20 text-center">
+              <span class="text-slate-400 text-[10px] block">ELEVAÇÃO (Vertical)</span>
+              <span id="summary-elevation" class="text-amber-300 font-bold text-sm">30.96°</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: ThreeJS 3D Viewport -->
+    <div class="lg:col-span-7 xl:col-span-8 relative h-[50vh] lg:h-auto w-full bg-slate-950 overflow-hidden flex flex-col">
+      <div id="webgl-container" class="w-full h-full relative cursor-grab active:cursor-grabbing"></div>
+
+      <!-- Overlaid Badges & Legend -->
+      <div class="absolute top-3 left-3 pointer-events-none flex flex-col gap-2 z-10 text-xs">
+        <div class="glass-panel px-3 py-2 rounded-xl flex flex-wrap items-center gap-3 shadow-lg">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+            <span class="font-medium text-slate-200">Vetor 3D $\vec{AB}$</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-purple-400 shadow-[0_0_8px_#c084fc]"></span>
+            <span class="font-medium text-slate-200">Projeção Horizontal $r$</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+            <span class="text-sky-300 font-semibold">Azimute $\theta$</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span class="text-amber-300 font-semibold">Elevação $\phi$</span>
+          </div>
+        </div>
+
+        <div class="glass-panel px-2.5 py-1.5 rounded-lg text-[11px] flex items-center gap-2.5 w-fit">
+          <span class="text-red-400 font-mono font-bold">+X (Eixo Base)</span>
+          <span class="text-sky-400 font-mono font-bold">+P (Profundidade / Plano Y)</span>
+          <span class="text-green-400 font-mono font-bold">+A (Altura Vertical Z)</span>
+        </div>
+      </div>
+
+      <!-- Quick Interactive Hint -->
+      <div class="absolute bottom-3 left-4 text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-800 pointer-events-none">
+        Arraste com botão esquerdo para orbitar • Scroll para zoom • Botão direito para transladar
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // State object
+    const state = {
+      dx: 4.0,
+      dy: 3.0,
+      dz: 3.0,
+      showSectorAzimuth: true,
+      showSectorElevation: true,
+      showProjections: true,
+      autoRotate: false
+    };
+
+    let scene, camera, renderer, controls;
+    let gridGround, groupAxes;
+    let arrowVector3D = null;
+    let arrowProjectionXY = null;
+    let verticalDropLine = null;
+    let sphereTip = null;
+    let groupAzimuthSector, groupElevationSector;
+    let currentGridR = 0;
+
+    // Smooth camera transition state
+    let isTransitioningCamera = false;
+    let camStartPos = new THREE.Vector3();
+    let camEndPos = new THREE.Vector3();
+    let camStartTarget = new THREE.Vector3();
+    let camEndTarget = new THREE.Vector3();
+    let camAnimProgress = 0;
+
+    const container = document.getElementById('webgl-container');
+
+    function init3D() {
+      // Scene setup
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x020617);
+      scene.fog = new THREE.FogExp2(0x020617, 0.02);
+
+      // Camera setup
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(11, -12, 9);
+      camera.up.set(0, 0, 1); // Z is vertical in this module's standard convention
+
+      // WebGL Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      // OrbitControls
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.target.set(2, 1.5, 1.5);
+
+      // Cancel camera tween if user starts manual interaction
+      controls.addEventListener('start', () => {
+        isTransitioningCamera = false;
+      });
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      directionalLight.position.set(10, -10, 15);
+      scene.add(directionalLight);
+
+      const fillLight = new THREE.PointLight(0x38bdf8, 0.45, 25);
+      fillLight.position.set(-8, 8, -6);
+      scene.add(fillLight);
+
+      // Origin and tip spheres
+      const originSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.16, 24, 24),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, emissive: 0x334155, emissiveIntensity: 0.5 })
+      );
+      scene.add(originSphere);
+
+      sphereTip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 24, 24),
+        new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x065f46, emissiveIntensity: 0.5 })
+      );
+      scene.add(sphereTip);
+
+      // Dynamic groups for angle arcs and sectors
+      groupAzimuthSector = new THREE.Group();
+      groupElevationSector = new THREE.Group();
+      groupAxes = new THREE.Group();
+      scene.add(groupAzimuthSector);
+      scene.add(groupElevationSector);
+      scene.add(groupAxes);
+
+      // Event Listeners
+      window.addEventListener('resize', onWindowResize);
+      setupUIEventListeners();
+
+      // Initial Update
+      updateAdaptiveGridAndAxes(false);
+      updateAll(false);
+      animate();
+    }
+
+    function updateAdaptiveGridAndAxes(shouldAutoZoom = false) {
+      const maxCoord = Math.max(Math.abs(state.dx), Math.abs(state.dy), Math.abs(state.dz));
+      const R = Math.max(2, Math.ceil(maxCoord) + 1);
+
+      const badge = document.getElementById('gridInfoBadge');
+      if (badge) {
+        badge.innerHTML = `Grid Adaptativo: $\\pm ${R}$`;
+        if (window.katex && typeof renderMathInElement === 'function') {
+          renderMathInElement(badge, { delimiters: [{ left: '$', right: '$', display: false }] });
+        }
+      }
+
+      if (R === currentGridR) return;
+      currentGridR = R;
+
+      // 1. Grid on XY plane
+      if (gridGround) scene.remove(gridGround);
+      const gridSize = R * 2;
+      const gridDivisions = R * 2;
+      gridGround = new THREE.GridHelper(gridSize, gridDivisions, 0x475569, 0x1e293b);
+      gridGround.rotation.x = Math.PI / 2; // Flat on XY
+      gridGround.position.set(0, 0, 0);
+      scene.add(gridGround);
+
+      // 2. Axes in groupAxes
+      while (groupAxes.children.length > 0) {
+        groupAxes.remove(groupAxes.children[0]);
+      }
+
+      const axisLen = R;
+      const headLen = Math.min(0.35, axisLen * 0.08);
+      const headWidth = headLen * 0.5;
+
+      const makeAxis = (dir, colorHex) => {
+        return new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0, 0), axisLen, colorHex, headLen, headWidth);
+      };
+
+      groupAxes.add(makeAxis(new THREE.Vector3(1, 0, 0), 0xf43f5e));  // +X Red
+      groupAxes.add(makeAxis(new THREE.Vector3(-1, 0, 0), 0x881337)); // -X Dim
+      groupAxes.add(makeAxis(new THREE.Vector3(0, 1, 0), 0x38bdf8));  // +Y Sky Blue
+      groupAxes.add(makeAxis(new THREE.Vector3(0, -1, 0), 0x075985)); // -Y Dim
+      groupAxes.add(makeAxis(new THREE.Vector3(0, 0, 1), 0x22c55e));  // +Z Green (Vertical)
+      groupAxes.add(makeAxis(new THREE.Vector3(0, 0, -1), 0x14532d)); // -Z Dim
+
+      // Axis labels
+      const makeTextSprite = (text, color, pos) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = color;
+        ctx.font = 'Bold 56px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 128, 64);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true }));
+        sprite.position.copy(pos);
+        sprite.scale.set(0.8, 0.4, 0.8);
+        groupAxes.add(sprite);
+      };
+
+      makeTextSprite('+X', '#f43f5e', new THREE.Vector3(axisLen + 0.35, 0, 0.1));
+      makeTextSprite('+P', '#38bdf8', new THREE.Vector3(0, axisLen + 0.35, 0.1));
+      makeTextSprite('+A', '#22c55e', new THREE.Vector3(0, 0.1, axisLen + 0.35));
+
+      if (shouldAutoZoom) {
+        const dist = Math.max(9, R * 1.85);
+        const targetPos = new THREE.Vector3(dist * 0.75, -dist * 0.82, dist * 0.62);
+        const targetLook = new THREE.Vector3(state.dx * 0.35, state.dy * 0.35, state.dz * 0.35);
+        startCameraTransition(targetPos, targetLook);
+      }
+    }
+
+    function startCameraTransition(newPos, newTarget) {
+      camStartPos.copy(camera.position);
+      camEndPos.copy(newPos);
+      camStartTarget.copy(controls.target);
+      camEndTarget.copy(newTarget);
+      camAnimProgress = 0;
+      isTransitioningCamera = true;
+    }
+
+    function createAzimuthSector(targetTheta, radius, colorHex) {
+      const group = new THREE.Group();
+      if (Math.abs(targetTheta) < 0.001) return group;
+
+      const segments = 36;
+      const points = [];
+      const wedgeVertices = [0, 0, 0];
+
+      for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const currentAngle = t * targetTheta;
+        const x = radius * Math.cos(currentAngle);
+        const y = radius * Math.sin(currentAngle);
+        const z = 0;
+        points.push(new THREE.Vector3(x, y, z));
+        wedgeVertices.push(x, y, z);
+      }
+
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const lineMat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 3 });
+      const arcLine = new THREE.Line(lineGeo, lineMat);
+      group.add(arcLine);
+
+      const indices = [];
+      for (let i = 1; i <= segments; i++) {
+        if (targetTheta >= 0) {
+          indices.push(0, i, i + 1);
+        } else {
+          indices.push(0, i + 1, i);
+        }
+      }
+
+      const wedgeGeo = new THREE.BufferGeometry();
+      wedgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(wedgeVertices, 3));
+      wedgeGeo.setIndex(indices);
+      wedgeGeo.computeVertexNormals();
+
+      const wedgeMat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.3,
+        depthWrite: false
+      });
+      group.add(new THREE.Mesh(wedgeGeo, wedgeMat));
+
+      return group;
+    }
+
+    function createElevationSector(azimuthTheta, elevationPhi, radius, colorHex) {
+      const group = new THREE.Group();
+      if (Math.abs(elevationPhi) < 0.001) return group;
+
+      const segments = 36;
+      const points = [];
+      const wedgeVertices = [0, 0, 0];
+
+      const cosAz = Math.cos(azimuthTheta);
+      const sinAz = Math.sin(azimuthTheta);
+
+      for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const curPhi = t * elevationPhi;
+        const rHoriz = radius * Math.cos(curPhi);
+        const x = rHoriz * cosAz;
+        const y = rHoriz * sinAz;
+        const z = radius * Math.sin(curPhi);
+
+        points.push(new THREE.Vector3(x, y, z));
+        wedgeVertices.push(x, y, z);
+      }
+
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const lineMat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 3 });
+      const arcLine = new THREE.Line(lineGeo, lineMat);
+      group.add(arcLine);
+
+      const indices = [];
+      for (let i = 1; i <= segments; i++) {
+        if (elevationPhi >= 0) {
+          indices.push(0, i, i + 1);
+        } else {
+          indices.push(0, i + 1, i);
+        }
+      }
+
+      const wedgeGeo = new THREE.BufferGeometry();
+      wedgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(wedgeVertices, 3));
+      wedgeGeo.setIndex(indices);
+      wedgeGeo.computeVertexNormals();
+
+      const wedgeMat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.35,
+        depthWrite: false
+      });
+      group.add(new THREE.Mesh(wedgeGeo, wedgeMat));
+
+      return group;
+    }
+
+    function updateAll(fromSlider = false) {
+      const dx = state.dx;
+      const dy = state.dy;
+      const dz = state.dz;
+
+      updateAdaptiveGridAndAxes(fromSlider);
+
+      document.getElementById('label-dx').textContent = dx.toFixed(2);
+      document.getElementById('label-dy').textContent = dy.toFixed(2);
+      document.getElementById('label-dz').textContent = dz.toFixed(2);
+
+      const targetTip = new THREE.Vector3(dx, dy, dz);
+      const projTip = new THREE.Vector3(dx, dy, 0);
+      const r = Math.sqrt(dx * dx + dy * dy);
+      const fullLen = targetTip.length();
+
+      sphereTip.position.copy(targetTip);
+
+      if (arrowVector3D) scene.remove(arrowVector3D);
+      if (arrowProjectionXY) scene.remove(arrowProjectionXY);
+      if (verticalDropLine) scene.remove(verticalDropLine);
+
+      if (fullLen > 0.001) {
+        const dir3D = targetTip.clone().normalize();
+        arrowVector3D = new THREE.ArrowHelper(dir3D, new THREE.Vector3(0,0,0), fullLen, 0x10b981, Math.min(0.4, fullLen * 0.2), Math.min(0.2, fullLen * 0.1));
+        scene.add(arrowVector3D);
+      }
+
+      if (r > 0.001 && state.showProjections) {
+        const dirXY = projTip.clone().normalize();
+        arrowProjectionXY = new THREE.ArrowHelper(dirXY, new THREE.Vector3(0,0,0), r, 0xa855f7, Math.min(0.35, r * 0.2), Math.min(0.18, r * 0.1));
+        scene.add(arrowProjectionXY);
+
+        const dropGeo = new THREE.BufferGeometry().setFromPoints([targetTip, projTip]);
+        const dropMat = new THREE.LineDashedMaterial({ color: 0x22c55e, dashSize: 0.15, gapSize: 0.1, transparent: true, opacity: 0.7 });
+        verticalDropLine = new THREE.Line(dropGeo, dropMat);
+        verticalDropLine.computeLineDistances();
+        scene.add(verticalDropLine);
+      }
+
+      const thetaRad = Math.atan2(dy, dx);
+      let thetaDeg = thetaRad * 180 / Math.PI;
+
+      const phiRad = Math.atan2(dz, r);
+      const phiDeg = phiRad * 180 / Math.PI;
+
+      while (groupAzimuthSector.children.length > 0) groupAzimuthSector.remove(groupAzimuthSector.children[0]);
+      while (groupElevationSector.children.length > 0) groupElevationSector.remove(groupElevationSector.children[0]);
+
+      if (r > 0.001 && state.showSectorAzimuth) {
+        const arcRadius = Math.min(2.5, Math.max(0.8, r * 0.55));
+        groupAzimuthSector.add(createAzimuthSector(thetaRad, arcRadius, 0x38bdf8));
+      }
+
+      if (fullLen > 0.001 && state.showSectorElevation) {
+        const elevRadius = Math.min(2.8, Math.max(0.9, fullLen * 0.65));
+        groupElevationSector.add(createElevationSector(thetaRad, phiRad, elevRadius, 0xf59e0b));
+      }
+
+      renderMathDerivations(dx, dy, dz, r, fullLen, thetaRad, thetaDeg, phiRad, phiDeg);
+    }
+
+    function safeRenderKatex(latex, elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      if (typeof window.katex !== 'undefined' && window.katex.render) {
+        try {
+          window.katex.render(latex, el, { throwOnError: false });
+        } catch (e) {
+          el.textContent = latex;
+        }
+      } else {
+        el.textContent = latex;
+      }
+    }
+
+    function renderMathDerivations(dx, dy, dz, r, fullLen, thRad, thDeg, phRad, phDeg) {
+      document.getElementById('badge-radius').textContent = `r = ${r.toFixed(2)}`;
+      document.getElementById('badge-azimuth').textContent = `θ ≈ ${thDeg.toFixed(2)}°`;
+      document.getElementById('badge-elevation').textContent = `φ ≈ ${phDeg.toFixed(2)}°`;
+      document.getElementById('summary-azimuth').textContent = `${thDeg.toFixed(2)}°`;
+      document.getElementById('summary-elevation').textContent = `${phDeg.toFixed(2)}°`;
+
+      // 1. Horizontal Projection Radius
+      const sumSqXY = (dx * dx + dy * dy).toFixed(2);
+      const mathRadius = `\\begin{aligned}
+        \\text{Projeção } XY &= (${dx.toFixed(2)},\\; ${dy.toFixed(2)},\\; 0) \\\\[2pt]
+        r &= \\sqrt{\\Delta x^2 + \\Delta y^2} = \\sqrt{(${dx.toFixed(2)})^2 + (${dy.toFixed(2)})^2} = \\sqrt{${sumSqXY}} = \\mathbf{${r.toFixed(2)}}
+      \\end{aligned}`;
+      safeRenderKatex(mathRadius, 'katex-step-radius');
+
+      // 2. Azimuth theta
+      let mathAzimuth = '';
+      if (r < 0.001) {
+        mathAzimuth = `\\theta = \\operatorname{atan2}(0, 0) \\implies \\text{Indefinido (no próprio eixo vertical)}`;
+      } else {
+        mathAzimuth = `\\theta = \\operatorname{atan2}(\\Delta y, \\Delta x) = \\operatorname{atan2}(${dy.toFixed(2)},\\; ${dx.toFixed(2)}) = \\mathbf{${thDeg.toFixed(2)}^\\circ} \\; (${thRad.toFixed(3)}\\text{ rad})`;
+      }
+      safeRenderKatex(mathAzimuth, 'katex-step-azimuth');
+
+      // 3. Elevation phi
+      let mathElevation = '';
+      if (fullLen < 0.001) {
+        mathElevation = `\\phi = \\operatorname{atan2}(0, 0) \\implies \\text{Indefinido (vetor nulo)}`;
+      } else {
+        mathElevation = `\\phi = \\operatorname{atan2}(\\Delta z,\\; r) = \\operatorname{atan2}(${dz.toFixed(2)},\\; ${r.toFixed(2)}) = \\mathbf{${phDeg.toFixed(2)}^\\circ} \\; (${phRad.toFixed(3)}\\text{ rad})`;
+      }
+      safeRenderKatex(mathElevation, 'katex-step-elevation');
+    }
+
+    function setupUIEventListeners() {
+      const bindSlider = (id, prop) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', (e) => {
+            state[prop] = parseFloat(e.target.value);
+            updateAll(true);
+          });
+        }
+      };
+
+      bindSlider('slider-dx', 'dx');
+      bindSlider('slider-dy', 'dy');
+      bindSlider('slider-dz', 'dz');
+
+      document.getElementById('btn-preset-artigo')?.addEventListener('click', () => {
+        setDeltas(4.0, 3.0, 3.0);
+        startCameraTransition(new THREE.Vector3(11, -12, 9), new THREE.Vector3(2, 1.5, 1.5));
+      });
+
+      document.getElementById('btn-preset-horizonte')?.addEventListener('click', () => {
+        setDeltas(4.0, 4.0, 0.0);
+        startCameraTransition(new THREE.Vector3(10, -10, 7), new THREE.Vector3(2, 2, 0));
+      });
+
+      document.getElementById('btn-preset-zenite')?.addEventListener('click', () => {
+        setDeltas(0.01, 0.0, 5.0);
+        startCameraTransition(new THREE.Vector3(8, -8, 7), new THREE.Vector3(0, 0, 2.5));
+      });
+
+      document.getElementById('btn-preset-nadir')?.addEventListener('click', () => {
+        setDeltas(3.0, 3.0, -4.0);
+        startCameraTransition(new THREE.Vector3(9, -9, 4), new THREE.Vector3(1.5, 1.5, -2));
+      });
+
+      document.getElementById('btn-reset-vals')?.addEventListener('click', () => {
+        setDeltas(4.0, 3.0, 3.0);
+      });
+
+      document.getElementById('btn-reset-cam')?.addEventListener('click', () => {
+        const dist = Math.max(9, currentGridR * 1.85);
+        startCameraTransition(new THREE.Vector3(dist * 0.75, -dist * 0.82, dist * 0.62), new THREE.Vector3(state.dx * 0.35, state.dy * 0.35, state.dz * 0.35));
+      });
+
+      document.getElementById('btn-top-view')?.addEventListener('click', () => {
+        const dist = Math.max(9, currentGridR * 2.1);
+        startCameraTransition(new THREE.Vector3(0.01, 0.01, dist), new THREE.Vector3(0, 0, 0));
+      });
+
+      document.getElementById('chk-sector-azimuth')?.addEventListener('change', (e) => {
+        state.showSectorAzimuth = e.target.checked;
+        updateAll(false);
+      });
+
+      document.getElementById('chk-sector-elevation')?.addEventListener('change', (e) => {
+        state.showSectorElevation = e.target.checked;
+        updateAll(false);
+      });
+
+      document.getElementById('chk-projections')?.addEventListener('change', (e) => {
+        state.showProjections = e.target.checked;
+        updateAll(false);
+      });
+
+      document.getElementById('chk-autorotate')?.addEventListener('change', (e) => {
+        state.autoRotate = e.target.checked;
+      });
+    }
+
+    function setDeltas(x, y, z) {
+      state.dx = x;
+      state.dy = y;
+      state.dz = z;
+
+      const sx = document.getElementById('slider-dx');
+      const sy = document.getElementById('slider-dy');
+      const sz = document.getElementById('slider-dz');
+      if (sx) sx.value = x;
+      if (sy) sy.value = y;
+      if (sz) sz.value = z;
+
+      updateAll(true);
+    }
+
+    function onWindowResize() {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (isTransitioningCamera) {
+        camAnimProgress += 0.05;
+        const ease = 0.5 - 0.5 * Math.cos(Math.min(1, camAnimProgress) * Math.PI);
+        camera.position.lerpVectors(camStartPos, camEndPos, ease);
+        controls.target.lerpVectors(camStartTarget, camEndTarget, ease);
+
+        if (camAnimProgress >= 1.0) {
+          isTransitioningCamera = false;
+        }
+      }
+
+      if (state.autoRotate && !isTransitioningCamera) {
+        scene.rotation.z += 0.004; // Rotating around vertical Z axis
+      } else {
+        scene.rotation.z = 0;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function renderAllStaticMath() {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true }
+          ],
+          throwOnError: false,
+          ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"]
+        });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAllStaticMath();
+      init3D();
+    });
+  </script>
+</body>
+</html>

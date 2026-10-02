@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cossenos Diretores e Ângulos no Espaço 3D</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- KaTeX CSS & JS with Auto-render Extension -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            axisX: '#f43f5e',
+            axisY: '#22c55e',
+            axisZ: '#3b82f6',
+            vectorCol: '#fbbf24',
+            unitCol: '#06b6d4'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    /* Scrollbar larga, confortável e colorida para o painel de controles */
+    .custom-scroll {
+      scrollbar-width: auto;
+      scrollbar-color: #f43f5e #090d16;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 12px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #090d16;
+      border-left: 1px solid rgba(51, 65, 85, 0.5);
+      box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #f43f5e 0%, #22c55e 50%, #3b82f6 100%);
+      border-radius: 9999px;
+      border: 2px solid #090d16;
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #fb7185 0%, #4ade80 50%, #60a5fa 100%);
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.7);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:active {
+      background: linear-gradient(180deg, #e11d48 0%, #16a34a 50%, #2563eb 100%);
+    }
+    input[type=range] {
+      accent-color: #06b6d4;
+    }
+    .slider-x { accent-color: #f43f5e; }
+    .slider-y { accent-color: #22c55e; }
+    .slider-z { accent-color: #3b82f6; }
+
+    /* Ajuste de fórmulas KaTeX para prevenir scrolls verticais indesejados */
+    .katex-display {
+      margin: 0.25em 0 !important;
+    }
+    .katex {
+      font-size: 1.02em;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none overflow-x-hidden">
+
+  <!-- Header Top Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-4 py-3 flex items-center justify-between z-30 sticky top-0">
+    <div class="flex items-center space-x-3">
+      <div class="h-9 px-2.5 rounded-xl bg-gradient-to-tr from-cyan-500 via-emerald-500 to-rose-500 flex items-center justify-center font-bold text-white shadow-lg text-xs whitespace-nowrap shadow-cyan-500/20">
+        $(\alpha,\beta,\gamma)$
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          Cossenos Diretores e Ângulos no Espaço
+          <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Demonstração 3D</span>
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">
+          By Sandro Benigno (EvilPlaymobil) — As componentes do vetor unitário $\hat{\mathbf{v}}$ são rigorosamente iguais aos cossenos de inclinação com os eixos
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 text-xs">
+      <a href="index.html" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700 flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Início
+      </a>
+      <button id="btn-reset-cam" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        Resetar Câmera
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Split Layout (Left: Controls & Math | Right: 3D Canvas) -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-65px)]">
+    
+    <!-- Left: Sidebar Controls and KaTeX Mathematical Derivations -->
+    <div class="lg:col-span-5 xl:col-span-4 border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-slate-900/90 flex flex-col custom-scroll overflow-y-auto max-h-[calc(100vh-65px)]">
+      
+      <!-- Preset Buttons -->
+      <div class="p-4 border-b border-slate-800/80">
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2.5">Cenários Didáticos Pré-definidos</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-preset-artigo" class="text-left p-2.5 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/30 transition group">
+            <div class="text-xs font-bold text-cyan-300 group-hover:text-cyan-200">Exemplo 1: Vetor (4, 3, 3)</div>
+            <div class="text-[11px] text-slate-400 font-mono">v = (4, 3, 3) • |v| = √34</div>
+            <div class="text-[10px] text-cyan-400 font-mono">α≈59.0°, β≈67.3°, γ≈59.0°</div>
+          </button>
+          <button id="btn-preset-diagonal" class="text-left p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/70 border border-slate-700/60 transition group">
+            <div class="text-xs font-bold text-amber-300 group-hover:text-amber-200">Diagonal Simétrica</div>
+            <div class="text-[11px] text-slate-400 font-mono">v = (2, 2, 2)</div>
+            <div class="text-[10px] text-amber-400 font-mono">α = β = γ ≈ 54.7°</div>
+          </button>
+          <button id="btn-preset-eixo-x" class="text-left p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/70 border border-slate-700/60 transition group">
+            <div class="text-xs font-bold text-rose-300 group-hover:text-rose-200">Eixo X Puro</div>
+            <div class="text-[11px] text-slate-400 font-mono">v = (3, 0, 0)</div>
+            <div class="text-[10px] text-rose-400 font-mono">α = 0°, β = 90°, γ = 90°</div>
+          </button>
+          <button id="btn-preset-plano-xy" class="text-left p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/70 border border-slate-700/60 transition group">
+            <div class="text-xs font-bold text-green-300 group-hover:text-green-200">Plano XY (45°)</div>
+            <div class="text-[11px] text-slate-400 font-mono">v = (3, 3, 0)</div>
+            <div class="text-[10px] text-green-400 font-mono">α = 45°, β = 45°, γ = 90°</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sliders Section -->
+      <div class="p-4 border-b border-slate-800/80 space-y-3.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Componentes de $\mathbf{v}$</span>
+          <div class="flex items-center gap-2">
+            <span id="gridInfoBadge" class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60">Grid Adaptativo: $\pm 5$</span>
+            <button id="btn-reset-vals" class="text-[11px] text-slate-400 hover:text-cyan-400 transition underline underline-offset-2">Resetar</button>
+          </div>
+        </div>
+
+        <!-- Slider Vx -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold flex items-center gap-1.5 text-rose-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+              $v_x$ (Eixo X)
+            </span>
+            <span id="label-vx" class="font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-rose-300 font-semibold text-xs">4.00</span>
+          </div>
+          <input id="slider-vx" type="range" min="-6" max="6" step="0.1" value="4.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-x">
+        </div>
+
+        <!-- Slider Vy -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold flex items-center gap-1.5 text-green-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
+              $v_y$ (Eixo Y - Altura)
+            </span>
+            <span id="label-vy" class="font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-green-300 font-semibold text-xs">3.00</span>
+          </div>
+          <input id="slider-vy" type="range" min="-6" max="6" step="0.1" value="3.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-y">
+        </div>
+
+        <!-- Slider Vz -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold flex items-center gap-1.5 text-blue-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
+              $v_z$ (Eixo Z - Profundidade)
+            </span>
+            <span id="label-vz" class="font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-blue-300 font-semibold text-xs">3.00</span>
+          </div>
+          <input id="slider-vz" type="range" min="-6" max="6" step="0.1" value="3.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-z">
+        </div>
+
+        <!-- Visibility toggles -->
+        <div class="pt-2 grid grid-cols-2 gap-2 text-xs">
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-arc-alpha" checked class="rounded bg-slate-800 border-slate-700 text-rose-500 focus:ring-0">
+            <span>Arco $\alpha$ (Eixo X)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-arc-beta" checked class="rounded bg-slate-800 border-slate-700 text-green-500 focus:ring-0">
+            <span>Arco $\beta$ (Eixo Y)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-arc-gamma" checked class="rounded bg-slate-800 border-slate-700 text-blue-500 focus:ring-0">
+            <span>Arco $\gamma$ (Eixo Z)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-projections" checked class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+            <span>Projeções de $\mathbf{\hat{u}}$</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-projections-v" checked class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+            <span>Projeções de $\mathbf{v}$</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-sphere" checked class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+            <span>Esfera Unitária ($r=1$)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="chk-autorotate" class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+            <span>Auto Rotação</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Mathematical Step-by-Step Panels -->
+      <div class="p-4 space-y-4 flex-1">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Passo a Passo Algébrico</label>
+          <span class="text-[10px] text-cyan-400 font-mono bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded">Tempo Real</span>
+        </div>
+
+        <!-- 1. Vetor Unitário e Cossenos -->
+        <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800 space-y-1.5">
+          <div class="text-xs font-semibold text-cyan-300">1. O Vetor Unitário $\hat{\mathbf{v}}$ & Cossenos Diretores</div>
+          <div id="katex-unit-vector" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-slate-200"></div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            As componentes $(\hat{v}_x, \hat{v}_y, \hat{v}_z)$ correspondem exatamente aos cossenos diretores $(\cos\alpha, \cos\beta, \cos\gamma)$.
+          </p>
+        </div>
+
+        <!-- 2. Ângulos Diretores Individuais -->
+        <div class="space-y-2">
+          <!-- Alfa -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border border-rose-500/30 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-rose-400">Ângulo com o Eixo X ($\alpha$)</span>
+              <span id="badge-alpha" class="text-xs font-mono font-bold text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded border border-rose-800"></span>
+            </div>
+            <div id="katex-alpha" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-rose-100"></div>
+          </div>
+
+          <!-- Beta -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border border-green-500/30 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-green-400">Ângulo com o Eixo Y ($\beta$)</span>
+              <span id="badge-beta" class="text-xs font-mono font-bold text-green-300 bg-green-950/80 px-2 py-0.5 rounded border border-green-800"></span>
+            </div>
+            <div id="katex-beta" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-green-100"></div>
+          </div>
+
+          <!-- Gama -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border border-blue-500/30 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-blue-400">Ângulo com o Eixo Z ($\gamma$)</span>
+              <span id="badge-gamma" class="text-xs font-mono font-bold text-blue-300 bg-blue-950/80 px-2 py-0.5 rounded border border-blue-800"></span>
+            </div>
+            <div id="katex-gamma" class="text-sm overflow-x-auto overflow-y-hidden py-1 text-blue-100"></div>
+          </div>
+        </div>
+
+        <!-- 3. Identidade Fundamental cos²α + cos²β + cos²γ = 1 -->
+        <div class="bg-gradient-to-br from-slate-950 via-indigo-950/30 to-slate-950 p-3.5 rounded-xl border border-indigo-500/30 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+              Identidade Fundamental
+            </span>
+            <span id="badge-identity" class="text-[10px] font-mono text-emerald-300 bg-emerald-950/80 border border-emerald-700 px-2 py-0.5 rounded">1.0000</span>
+          </div>
+          <div id="katex-identity" class="text-xs overflow-x-auto overflow-y-hidden py-1 text-indigo-100 font-mono"></div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Como a norma de $\hat{\mathbf{v}}$ é 1, a soma dos quadrados dos cossenos diretores resulta identicamente em <strong>1</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: ThreeJS 3D Viewport -->
+    <div class="lg:col-span-7 xl:col-span-8 relative h-[50vh] lg:h-auto w-full bg-slate-950 overflow-hidden flex flex-col">
+      <div id="webgl-container" class="w-full h-full relative cursor-grab active:cursor-grabbing"></div>
+
+      <!-- Overlaid Badges & Legend -->
+      <div class="absolute top-3 left-3 pointer-events-none flex flex-col gap-2 z-10 text-xs">
+        <div class="glass-panel px-3 py-2 rounded-xl flex flex-wrap items-center gap-3 shadow-lg">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
+            <span class="font-medium text-slate-200">Vetor Unitário $\hat{\mathbf{v}}$</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-amber-400/80 shadow-[0_0_6px_#fbbf24]"></span>
+            <span class="text-slate-300">Vetor Original $\mathbf{v}$</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full border border-dashed border-cyan-400/80"></span>
+            <span class="text-slate-300">Esfera $r=1$</span>
+          </div>
+        </div>
+
+        <!-- Direction angles legend -->
+        <div class="glass-panel px-3 py-1.5 rounded-lg flex flex-wrap items-center gap-3 text-[11px]">
+          <div class="flex items-center gap-1.5 text-rose-400 font-semibold">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <span>$\alpha$ (com Eixo $+X$)</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-green-400 font-semibold">
+            <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+            <span>$\beta$ (com Eixo $+Y$)</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-blue-400 font-semibold">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+            <span>$\gamma$ (com Eixo $+Z$)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Hint -->
+      <div class="absolute bottom-3 left-4 text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-800 pointer-events-none">
+        Arraste com o botão esquerdo para orbitar • Role para zoom • Botão direito para mover
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // State object
+    const state = {
+      vx: 4.0,
+      vy: 3.0,
+      vz: 3.0,
+      showArcAlpha: true,
+      showArcBeta: true,
+      showArcGamma: true,
+      showProjections: true,
+      showProjectionsV: true,
+      showSphere: true,
+      autoRotate: false
+    };
+
+    let scene, camera, renderer, controls;
+    let gridHelper;
+    let arrowOriginal, arrowUnit;
+    let unitSphereMesh, unitSphereWireframe, unitEquatorRing;
+    let groupArcAlpha, groupArcBeta, groupArcGamma;
+    let groupProjections, groupProjectionsV;
+    let groupAxes;
+    let currentGridR = 0;
+
+    // Smooth camera animation state
+    let isTransitioningCamera = false;
+    let camStartPos = new THREE.Vector3();
+    let camEndPos = new THREE.Vector3();
+    let camStartTarget = new THREE.Vector3();
+    let camEndTarget = new THREE.Vector3();
+    let camAnimProgress = 0;
+
+    const container = document.getElementById('webgl-container');
+
+    function init3D() {
+      // Scene setup
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x020617);
+      scene.fog = new THREE.FogExp2(0x020617, 0.02);
+
+      // Camera setup
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(5.5, 4.5, 6.0);
+
+      // WebGL Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      // OrbitControls
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.target.set(0.4, 0.4, 0.4);
+
+      // Cancel camera tween if user starts manual interaction
+      controls.addEventListener('start', () => {
+        isTransitioningCamera = false;
+      });
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      directionalLight.position.set(8, 12, 10);
+      scene.add(directionalLight);
+
+      const fillLight = new THREE.PointLight(0x38bdf8, 0.45, 20);
+      fillLight.position.set(-6, -4, -6);
+      scene.add(fillLight);
+
+      // Groups for dynamic elements
+      groupArcAlpha = new THREE.Group();
+      groupArcBeta = new THREE.Group();
+      groupArcGamma = new THREE.Group();
+      groupProjections = new THREE.Group();
+      groupProjectionsV = new THREE.Group();
+      groupAxes = new THREE.Group();
+
+      scene.add(groupArcAlpha);
+      scene.add(groupArcBeta);
+      scene.add(groupArcGamma);
+      scene.add(groupProjections);
+      scene.add(groupProjectionsV);
+      scene.add(groupAxes);
+
+      createUnitSphere();
+
+      // Event Listeners
+      window.addEventListener('resize', onWindowResize);
+      setupUIEventListeners();
+
+      // Initial Update
+      updateAdaptiveGridAndAxes(false);
+      updateAll(false);
+      animate();
+    }
+
+    function updateAdaptiveGridAndAxes(shouldAutoZoom = false) {
+      const maxCoord = Math.max(Math.abs(state.vx), Math.abs(state.vy), Math.abs(state.vz));
+      const R = Math.max(2, Math.ceil(maxCoord) + 1);
+
+      const badge = document.getElementById('gridInfoBadge');
+      if (badge) {
+        badge.innerHTML = `Grid Adaptativo: $\\pm ${R}$`;
+        if (window.katex && typeof renderMathInElement === 'function') {
+          renderMathInElement(badge, { delimiters: [{ left: '$', right: '$', display: false }] });
+        }
+      }
+
+      if (R === currentGridR) return;
+      currentGridR = R;
+
+      // 1. Atualiza Grid no Chão (XZ)
+      if (gridHelper) scene.remove(gridHelper);
+      const gridSize = R * 2;
+      const gridDivisions = R * 2; // Cada quadrante mede exatamente 1x1 unidade
+      gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x475569, 0x1e293b);
+      gridHelper.position.y = 0;
+      scene.add(gridHelper);
+
+      // 2. Atualiza Eixos Cartesianos
+      while (groupAxes.children.length > 0) {
+        groupAxes.remove(groupAxes.children[0]);
+      }
+
+      const axisLength = R;
+      const headLen = Math.min(0.35, axisLength * 0.08);
+      const headWidth = headLen * 0.5;
+
+      const makeAxis = (dir, colorHex) => {
+        return new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0, 0), axisLength, colorHex, headLen, headWidth);
+      };
+
+      groupAxes.add(makeAxis(new THREE.Vector3(1, 0, 0), 0xf43f5e));  // +X Rose
+      groupAxes.add(makeAxis(new THREE.Vector3(-1, 0, 0), 0x881337)); // -X Dim
+      groupAxes.add(makeAxis(new THREE.Vector3(0, 1, 0), 0x22c55e));  // +Y Green
+      groupAxes.add(makeAxis(new THREE.Vector3(0, -1, 0), 0x14532d)); // -Y Dim
+      groupAxes.add(makeAxis(new THREE.Vector3(0, 0, 1), 0x3b82f6));  // +Z Blue
+      groupAxes.add(makeAxis(new THREE.Vector3(0, 0, -1), 0x1e3a8a)); // -Z Dim
+
+      // Rótulos dos eixos
+      const makeTextSprite = (text, color, pos) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = color;
+        ctx.font = 'Bold 52px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 64, 64);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true }));
+        sprite.position.copy(pos);
+        sprite.scale.set(0.55, 0.55, 0.55);
+        groupAxes.add(sprite);
+      };
+
+      makeTextSprite('+X', '#f43f5e', new THREE.Vector3(axisLength + 0.35, 0.1, 0));
+      makeTextSprite('+Y', '#22c55e', new THREE.Vector3(0, axisLength + 0.35, 0.1));
+      makeTextSprite('+Z', '#3b82f6', new THREE.Vector3(0, 0.1, axisLength + 0.35));
+
+      if (shouldAutoZoom) {
+        const dist = Math.max(5.5, R * 1.55);
+        const targetPos = new THREE.Vector3(dist * 0.78, dist * 0.62, dist * 0.88);
+        const targetLook = new THREE.Vector3(state.vx * 0.18, state.vy * 0.18, state.vz * 0.18);
+        startCameraTransition(targetPos, targetLook);
+      }
+    }
+
+    function startCameraTransition(newPos, newTarget) {
+      camStartPos.copy(camera.position);
+      camEndPos.copy(newPos);
+      camStartTarget.copy(controls.target);
+      camEndTarget.copy(newTarget);
+      camAnimProgress = 0;
+      isTransitioningCamera = true;
+    }
+
+    function createUnitSphere() {
+      const sphereGeo = new THREE.SphereGeometry(1, 40, 24);
+      const sphereMat = new THREE.MeshPhysicalMaterial({
+        color: 0x06b6d4,
+        transparent: true,
+        opacity: 0.12,
+        roughness: 0.2,
+        metalness: 0.1,
+        transmission: 0.5,
+        depthWrite: false
+      });
+      unitSphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+      scene.add(unitSphereMesh);
+
+      const wireMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.14,
+        depthWrite: false
+      });
+      unitSphereWireframe = new THREE.Mesh(sphereGeo, wireMat);
+      scene.add(unitSphereWireframe);
+
+      const ringGeo = new THREE.RingGeometry(0.995, 1.005, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
+      unitEquatorRing = new THREE.Mesh(ringGeo, ringMat);
+      unitEquatorRing.rotation.x = Math.PI / 2;
+      scene.add(unitEquatorRing);
+    }
+
+    function createAngleArc(fromDir, toDir, radius, colorHex, opacity = 0.35) {
+      const group = new THREE.Group();
+      
+      const v1 = fromDir.clone().normalize();
+      const v2 = toDir.clone().normalize();
+      
+      const dot = Math.max(-1, Math.min(1, v1.dot(v2)));
+      const angle = Math.acos(dot);
+
+      if (angle < 0.001) return group;
+
+      let normal = new THREE.Vector3().crossVectors(v1, v2);
+      if (normal.lengthSq() < 0.0001) {
+        normal = new THREE.Vector3(0, 1, 0);
+        if (Math.abs(v1.y) > 0.9) normal = new THREE.Vector3(1, 0, 0);
+      } else {
+        normal.normalize();
+      }
+
+      const segments = 32;
+      const points = [];
+      const wedgeVertices = [];
+
+      wedgeVertices.push(0, 0, 0);
+
+      for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const currentAngle = t * angle;
+        const pt = v1.clone().applyAxisAngle(normal, currentAngle).multiplyScalar(radius);
+        points.push(pt);
+      }
+
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const lineMat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 2.5 });
+      const arcLine = new THREE.Line(lineGeo, lineMat);
+      group.add(arcLine);
+
+      const indices = [];
+      for (let i = 0; i < points.length; i++) {
+        wedgeVertices.push(points[i].x, points[i].y, points[i].z);
+      }
+      for (let i = 1; i <= segments; i++) {
+        indices.push(0, i, i + 1);
+      }
+
+      const wedgeGeo = new THREE.BufferGeometry();
+      wedgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(wedgeVertices, 3));
+      wedgeGeo.setIndex(indices);
+      wedgeGeo.computeVertexNormals();
+
+      const wedgeMat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: opacity,
+        depthWrite: false
+      });
+      const wedgeMesh = new THREE.Mesh(wedgeGeo, wedgeMat);
+      group.add(wedgeMesh);
+
+      return group;
+    }
+
+    function buildProjections(u) {
+      while (groupProjections.children.length > 0) {
+        const obj = groupProjections.children[0];
+        groupProjections.remove(obj);
+      }
+
+      if (!state.showProjections || u.length() < 0.001) return;
+
+      const origin = new THREE.Vector3(0, 0, 0);
+      const ptTip = u.clone();
+
+      const projX = new THREE.Vector3(u.x, 0, 0);
+      const projY = new THREE.Vector3(0, u.y, 0);
+      const projZ = new THREE.Vector3(0, 0, u.z);
+
+      const makeDashedLine = (from, to, colorHex) => {
+        const geo = new THREE.BufferGeometry().setFromPoints([from, to]);
+        const mat = new THREE.LineDashedMaterial({ color: colorHex, dashSize: 0.08, gapSize: 0.05, transparent: true, opacity: 0.65 });
+        const line = new THREE.Line(geo, mat);
+        line.computeLineDistances();
+        return line;
+      };
+
+      groupProjections.add(makeDashedLine(ptTip, projX, 0xf43f5e));
+      groupProjections.add(makeDashedLine(ptTip, projY, 0x22c55e));
+      groupProjections.add(makeDashedLine(ptTip, projZ, 0x3b82f6));
+
+      const makeSolidSegment = (from, to, colorHex) => {
+        const geo = new THREE.BufferGeometry().setFromPoints([from, to]);
+        const mat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 2.5 });
+        return new THREE.Line(geo, mat);
+      };
+
+      groupProjections.add(makeSolidSegment(origin, projX, 0xf43f5e));
+      groupProjections.add(makeSolidSegment(origin, projY, 0x22c55e));
+      groupProjections.add(makeSolidSegment(origin, projZ, 0x3b82f6));
+
+      const dotGeo = new THREE.SphereGeometry(0.04, 16, 16);
+      const addDot = (pos, colorHex) => {
+        const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+        const dot = new THREE.Mesh(dotGeo, mat);
+        dot.position.copy(pos);
+        groupProjections.add(dot);
+      };
+
+      addDot(projX, 0xf43f5e);
+      addDot(projY, 0x22c55e);
+      addDot(projZ, 0x3b82f6);
+    }
+
+    function buildProjectionsV(v) {
+      while (groupProjectionsV.children.length > 0) {
+        const obj = groupProjectionsV.children[0];
+        groupProjectionsV.remove(obj);
+      }
+
+      if (!state.showProjectionsV || v.length() < 0.001) return;
+
+      const ptTip = v.clone();
+      const projGround = new THREE.Vector3(v.x, 0, v.z);
+      const projX = new THREE.Vector3(v.x, 0, 0);
+      const projY = new THREE.Vector3(0, v.y, 0);
+      const projZ = new THREE.Vector3(0, 0, v.z);
+
+      const makeDashedLine = (from, to, colorHex, opacity = 0.85) => {
+        const geo = new THREE.BufferGeometry().setFromPoints([from, to]);
+        const mat = new THREE.LineDashedMaterial({
+          color: colorHex,
+          dashSize: 0.18,
+          gapSize: 0.1,
+          transparent: true,
+          opacity: opacity
+        });
+        const line = new THREE.Line(geo, mat);
+        line.computeLineDistances();
+        return line;
+      };
+
+      groupProjectionsV.add(makeDashedLine(ptTip, projGround, 0xfbbf24, 0.55));
+      groupProjectionsV.add(makeDashedLine(projGround, projX, 0xf43f5e, 0.5));
+      groupProjectionsV.add(makeDashedLine(projGround, projZ, 0x3b82f6, 0.5));
+      groupProjectionsV.add(makeDashedLine(ptTip, projY, 0x22c55e, 0.5));
+    }
+
+    function updateAll(fromSlider = false) {
+      const v = new THREE.Vector3(state.vx, state.vy, state.vz);
+      const norm = v.length();
+
+      updateAdaptiveGridAndAxes(fromSlider);
+
+      document.getElementById('label-vx').textContent = state.vx.toFixed(2);
+      document.getElementById('label-vy').textContent = state.vy.toFixed(2);
+      document.getElementById('label-vz').textContent = state.vz.toFixed(2);
+
+      if (arrowOriginal) scene.remove(arrowOriginal);
+      if (arrowUnit) scene.remove(arrowUnit);
+
+      if (norm > 0.001) {
+        const dir = v.clone().normalize();
+
+        arrowOriginal = new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0, 0), norm, 0xfbbf24, Math.min(0.35, norm * 0.2), Math.min(0.18, norm * 0.1));
+        arrowOriginal.line.material.transparent = true;
+        arrowOriginal.line.material.opacity = 0.45;
+        scene.add(arrowOriginal);
+
+        arrowUnit = new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0, 0), 1.0, 0x06b6d4, 0.22, 0.11);
+        scene.add(arrowUnit);
+
+        const ux = dir.x;
+        const uy = dir.y;
+        const uz = dir.z;
+
+        const alphaRad = Math.acos(Math.max(-1, Math.min(1, ux)));
+        const betaRad = Math.acos(Math.max(-1, Math.min(1, uy)));
+        const gammaRad = Math.acos(Math.max(-1, Math.min(1, uz)));
+
+        const alphaDeg = (alphaRad * 180 / Math.PI);
+        const betaDeg = (betaRad * 180 / Math.PI);
+        const gammaDeg = (gammaRad * 180 / Math.PI);
+
+        updateArcs(dir);
+        buildProjections(dir);
+        buildProjectionsV(v);
+
+        renderMath(v, norm, ux, uy, uz, alphaRad, betaRad, gammaRad, alphaDeg, betaDeg, gammaDeg);
+      }
+    }
+
+    function updateArcs(dir) {
+      while (groupArcAlpha.children.length > 0) groupArcAlpha.remove(groupArcAlpha.children[0]);
+      while (groupArcBeta.children.length > 0) groupArcBeta.remove(groupArcBeta.children[0]);
+      while (groupArcGamma.children.length > 0) groupArcGamma.remove(groupArcGamma.children[0]);
+
+      const dirX = new THREE.Vector3(1, 0, 0);
+      const dirY = new THREE.Vector3(0, 1, 0);
+      const dirZ = new THREE.Vector3(0, 0, 1);
+
+      if (state.showArcAlpha) {
+        groupArcAlpha.add(createAngleArc(dirX, dir, 0.65, 0xf43f5e, 0.25));
+      }
+
+      if (state.showArcBeta) {
+        groupArcBeta.add(createAngleArc(dirY, dir, 0.8, 0x22c55e, 0.25));
+      }
+
+      if (state.showArcGamma) {
+        groupArcGamma.add(createAngleArc(dirZ, dir, 0.95, 0x3b82f6, 0.25));
+      }
+    }
+
+    function safeRenderKatex(latex, elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      if (typeof window.katex !== 'undefined' && window.katex.render) {
+        try {
+          window.katex.render(latex, el, { throwOnError: false });
+        } catch (e) {
+          el.textContent = latex;
+        }
+      } else {
+        el.textContent = latex;
+      }
+    }
+
+    function renderMath(v, norm, ux, uy, uz, aRad, bRad, gRad, aDeg, bDeg, gDeg) {
+      // Badges
+      const bAlpha = document.getElementById('badge-alpha');
+      const bBeta = document.getElementById('badge-beta');
+      const bGamma = document.getElementById('badge-gamma');
+      if (bAlpha) bAlpha.textContent = `α ≈ ${aDeg.toFixed(1)}°`;
+      if (bBeta) bBeta.textContent = `β ≈ ${bDeg.toFixed(1)}°`;
+      if (bGamma) bGamma.textContent = `γ ≈ ${gDeg.toFixed(1)}°`;
+
+      // 1. Unit vector & Direction Cosines
+      const katexUnit = `\\hat{\\mathbf{v}} = \\frac{\\mathbf{v}}{|\\mathbf{v}|} = \\begin{pmatrix} \\hat{v}_x \\\\[2pt] \\hat{v}_y \\\\[2pt] \\hat{v}_z \\end{pmatrix} = \\begin{pmatrix} \\cos\\alpha \\\\[2pt] \\cos\\beta \\\\[2pt] \\cos\\gamma \\end{pmatrix} = \\begin{pmatrix} \\mathbf{${ux.toFixed(4)}} \\\\[2pt] \\mathbf{${uy.toFixed(4)}} \\\\[2pt] \\mathbf{${uz.toFixed(4)}} \\end{pmatrix}`;
+      safeRenderKatex(katexUnit, 'katex-unit-vector');
+
+      // 2. Alpha: arccos(vx)
+      const katexA = `\\alpha = \\arccos(\\hat{v}_x) = \\arccos(${ux.toFixed(4)}) = \\mathbf{${aDeg.toFixed(1)}^\\circ} \\; (${aRad.toFixed(3)}\\text{ rad})`;
+      safeRenderKatex(katexA, 'katex-alpha');
+
+      // 3. Beta: arccos(vy)
+      const katexB = `\\beta = \\arccos(\\hat{v}_y) = \\arccos(${uy.toFixed(4)}) = \\mathbf{${bDeg.toFixed(1)}^\\circ} \\; (${bRad.toFixed(3)}\\text{ rad})`;
+      safeRenderKatex(katexB, 'katex-beta');
+
+      // 4. Gamma: arccos(vz)
+      const katexG = `\\gamma = \\arccos(\\hat{v}_z) = \\arccos(${uz.toFixed(4)}) = \\mathbf{${gDeg.toFixed(1)}^\\circ} \\; (${gRad.toFixed(3)}\\text{ rad})`;
+      safeRenderKatex(katexG, 'katex-gamma');
+
+      // 5. Identity: cos²α + cos²β + cos²γ = 1
+      const cos2A = (ux * ux).toFixed(4);
+      const cos2B = (uy * uy).toFixed(4);
+      const cos2G = (uz * uz).toFixed(4);
+      const sum = (ux * ux + uy * uy + uz * uz).toFixed(4);
+
+      const katexIdent = `\\cos^2\\alpha + \\cos^2\\beta + \\cos^2\\gamma = (${ux.toFixed(2)})^2 + (${uy.toFixed(2)})^2 + (${uz.toFixed(2)})^2 = ${cos2A} + ${cos2B} + ${cos2G} = \\mathbf{${sum}}`;
+      safeRenderKatex(katexIdent, 'katex-identity');
+
+      const bIdent = document.getElementById('badge-identity');
+      if (bIdent) bIdent.textContent = `Soma = ${sum}`;
+    }
+
+    function setupUIEventListeners() {
+      const bindSlider = (id, prop) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', (e) => {
+            state[prop] = parseFloat(e.target.value);
+            updateAll(true);
+          });
+        }
+      };
+
+      bindSlider('slider-vx', 'vx');
+      bindSlider('slider-vy', 'vy');
+      bindSlider('slider-vz', 'vz');
+
+      document.getElementById('chk-arc-alpha')?.addEventListener('change', (e) => {
+        state.showArcAlpha = e.target.checked;
+        updateAll(false);
+      });
+      document.getElementById('chk-arc-beta')?.addEventListener('change', (e) => {
+        state.showArcBeta = e.target.checked;
+        updateAll(false);
+      });
+      document.getElementById('chk-arc-gamma')?.addEventListener('change', (e) => {
+        state.showArcGamma = e.target.checked;
+        updateAll(false);
+      });
+      document.getElementById('chk-projections')?.addEventListener('change', (e) => {
+        state.showProjections = e.target.checked;
+        updateAll(false);
+      });
+      document.getElementById('chk-projections-v')?.addEventListener('change', (e) => {
+        state.showProjectionsV = e.target.checked;
+        updateAll(false);
+      });
+      document.getElementById('chk-sphere')?.addEventListener('change', (e) => {
+        state.showSphere = e.target.checked;
+        unitSphereMesh.visible = e.target.checked;
+        unitSphereWireframe.visible = e.target.checked;
+        unitEquatorRing.visible = e.target.checked;
+      });
+      document.getElementById('chk-autorotate')?.addEventListener('change', (e) => {
+        state.autoRotate = e.target.checked;
+      });
+
+      // Presets
+      document.getElementById('btn-preset-artigo')?.addEventListener('click', () => {
+        setVector(4.0, 3.0, 3.0);
+        startCameraTransition(new THREE.Vector3(5.5, 4.5, 6.0), new THREE.Vector3(0.5, 0.4, 0.4));
+      });
+      document.getElementById('btn-preset-diagonal')?.addEventListener('click', () => {
+        setVector(2.0, 2.0, 2.0);
+        startCameraTransition(new THREE.Vector3(4.5, 4.0, 5.0), new THREE.Vector3(0.3, 0.3, 0.3));
+      });
+      document.getElementById('btn-preset-eixo-x')?.addEventListener('click', () => {
+        setVector(3.0, 0.0, 0.0);
+        startCameraTransition(new THREE.Vector3(4.8, 3.5, 4.8), new THREE.Vector3(0.4, 0, 0));
+      });
+      document.getElementById('btn-preset-plano-xy')?.addEventListener('click', () => {
+        setVector(3.0, 3.0, 0.0);
+        startCameraTransition(new THREE.Vector3(5.0, 4.0, 5.0), new THREE.Vector3(0.4, 0.4, 0));
+      });
+
+      document.getElementById('btn-reset-vals')?.addEventListener('click', () => {
+        setVector(4.0, 3.0, 3.0);
+      });
+
+      document.getElementById('btn-reset-cam')?.addEventListener('click', () => {
+        const dist = Math.max(5.5, currentGridR * 1.55);
+        startCameraTransition(new THREE.Vector3(dist * 0.78, dist * 0.62, dist * 0.88), new THREE.Vector3(state.vx * 0.18, state.vy * 0.18, state.vz * 0.18));
+      });
+    }
+
+    function setVector(x, y, z) {
+      state.vx = x;
+      state.vy = y;
+      state.vz = z;
+
+      const sx = document.getElementById('slider-vx');
+      const sy = document.getElementById('slider-vy');
+      const sz = document.getElementById('slider-vz');
+      if (sx) sx.value = x;
+      if (sy) sy.value = y;
+      if (sz) sz.value = z;
+
+      updateAll(true);
+    }
+
+    function onWindowResize() {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (isTransitioningCamera) {
+        camAnimProgress += 0.05;
+        const ease = 0.5 - 0.5 * Math.cos(Math.min(1, camAnimProgress) * Math.PI);
+        camera.position.lerpVectors(camStartPos, camEndPos, ease);
+        controls.target.lerpVectors(camStartTarget, camEndTarget, ease);
+
+        if (camAnimProgress >= 1.0) {
+          isTransitioningCamera = false;
+        }
+      }
+
+      if (state.autoRotate && !isTransitioningCamera) {
+        scene.rotation.y += 0.004;
+      } else {
+        scene.rotation.y = 0;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function renderAllStaticMath() {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true }
+          ],
+          throwOnError: false,
+          ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"]
+        });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAllStaticMath();
+      init3D();
+    });
+  </script>
+</body>
+</html>
