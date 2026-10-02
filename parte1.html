@@ -190,10 +190,14 @@
             <span>Projeções nos eixos</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+            <input type="checkbox" id="toggleUnit" checked class="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-0">
+            <span>Vetor Unitário $\mathbf{\hat{v}}$</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
             <input type="checkbox" id="toggleOriginal" checked class="rounded border-slate-700 bg-slate-800 text-cyan-500 focus:ring-0">
             <span>Vetor Original $\mathbf{v}$</span>
           </label>
-          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white col-span-2 sm:col-span-1">
             <input type="checkbox" id="toggleRotate" class="rounded border-slate-700 bg-slate-800 text-cyan-500 focus:ring-0">
             <span>Auto Rotação</span>
           </label>
@@ -554,11 +558,18 @@
       const v = new THREE.Vector3(currentX, currentY, currentZ);
       const norm = v.length();
 
+      const showOriginal = document.getElementById('toggleOriginal')?.checked ?? true;
+      const showUnit = document.getElementById('toggleUnit')?.checked ?? true;
+
       // Original vector update
-      setArrowTransform(vectorOriginalArrow, v, 0.45);
+      if (showOriginal && norm > 0.0001) {
+        setArrowTransform(vectorOriginalArrow, v, 0.45);
+      } else {
+        vectorOriginalArrow.visible = false;
+      }
 
       // Unit vector update (norm = 1)
-      if (norm > 0.0001) {
+      if (showUnit && norm > 0.0001) {
         const u = v.clone().normalize();
         setArrowTransform(vectorUnitArrow, u, 0.3);
       } else {
@@ -725,8 +736,12 @@
       updateVectors();
     });
 
-    document.getElementById('toggleOriginal').addEventListener('change', (e) => {
-      vectorOriginalArrow.visible = e.target.checked;
+    document.getElementById('toggleUnit').addEventListener('change', () => {
+      updateVectors();
+    });
+
+    document.getElementById('toggleOriginal').addEventListener('change', () => {
+      updateVectors();
     });
 
     document.getElementById('toggleRotate').addEventListener('change', (e) => {
